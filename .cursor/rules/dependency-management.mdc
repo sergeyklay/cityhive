@@ -1,7 +1,7 @@
 ---
 description: Dependency Management
-globs:
-alwaysApply: true
+globs: pyproject.toml
+alwaysApply: false
 ---
 # Dependency Management
 
