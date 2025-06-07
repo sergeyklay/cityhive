@@ -1,0 +1,79 @@
+# Continuous Integration Workflow for CityHive.
+#
+# This workflow checks code style, runs linters and runs automated tests and
+# quality checks for Python project on every push to main and pull
+# requests to ensure code quality and reliability.
+
+name: CI
+
+on:
+    push:
+      branches:
+        # This is to make sure that there is no broken CI on
+        # the main branch, and also for Sonarqube integration
+        - main
+    # We need it for better Sonarqube integration
+    pull_request:
+      types: [opened, synchronize, reopened]
+
+env:
+  PYTHONUNBUFFERED: "1"
+
+jobs:
+  test:
+    name: Run tests
+    runs-on: ubuntu-latest
+
+    # The maximum number of minutes to let a workflow run
+    # before GitHub automatically cancels it. Default: 360
+    timeout-minutes: 30
+
+    strategy:
+      # When set to true, GitHub cancels
+      # all in-progress jobs if any matrix job fails.
+      fail-fast: false
+
+      matrix:
+        python:
+          - '3.12'
+
+    concurrency:
+      # Cancel any currently running job or workflow in the same concurrency group.
+      # The group is a unique identifier for the workflow run.
+      #
+      # Explanation:
+      # - github.workflow: The name of the workflow (e.g. Workflow 1).
+      # - github.event.pull_request.number: The number of the pull request (when the trigger event is a PR).
+      # - github.ref: The branch name (when the trigger is not a PR but a push).
+      group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+      cancel-in-progress: true
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install uv + Python ${{ matrix.python }}
+        id: setup-uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          python-version: ${{ matrix.python }}
+          enable-cache: true
+          cache-dependency-glob: |
+            pyproject.toml
+            uv.lock
+
+      - name: Install dependencies
+        run: uv sync --locked --all-groups --all-packages
+
+      - name: Check code formatting
+        run: make format-check
+
+      - name: Run linter
+        run: make lint
+
+      - name: Run unit tests with coverage
+        run: |
+          make test
+          make ccov
