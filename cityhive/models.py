@@ -112,3 +112,28 @@ class Hive(Base, IdentityMixin):
     )
 
     user: so.Mapped["User"] = so.relationship(back_populates="hives")
+    sensors: so.Mapped[list["Sensor"]] = so.relationship(back_populates="hive")
+
+
+class Sensor(Base, IdentityMixin):
+    """Sensor model."""
+
+    __tablename__ = "sensors"
+
+    hive_id: so.Mapped[int] = so.mapped_column(
+        sa.ForeignKey("hives.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    type: so.Mapped[str] = so.mapped_column(
+        sa.Text,
+        nullable=False,
+    )
+    mounted_at: so.Mapped[datetime] = so.mapped_column(
+        sa.DateTime(timezone=True),
+        nullable=False,
+        index=True,
+        server_default=func.now(),
+    )
+
+    hive: so.Mapped["Hive"] = so.relationship(back_populates="sensors")
