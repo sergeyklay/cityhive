@@ -69,7 +69,9 @@ async def logging_middleware(
     request: web.Request, handler: Handler
 ) -> web.StreamResponse:
     """Log request/response information."""
-    start_time = request.loop.time()
+    import time
+
+    start_time = time.time()
 
     logger.info(
         "Request started: %s %s",
@@ -84,7 +86,7 @@ async def logging_middleware(
 
     try:
         response = await handler(request)
-        duration = request.loop.time() - start_time
+        duration = time.time() - start_time
 
         logger.info(
             "Request completed: %s %s -> %d (%.3fs)",
@@ -101,7 +103,7 @@ async def logging_middleware(
         )
         return response
     except Exception as e:
-        duration = request.loop.time() - start_time
+        duration = time.time() - start_time
         logger.error(
             "Request failed: %s %s (%.3fs)",
             request.method,

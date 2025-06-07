@@ -9,8 +9,8 @@ alwaysApply: false
 
 ## Test Structure
 
-- **Pure functional style** - no test classes unless absolutely necessary
-- **One test file per implementation file** - maintain 1:1 ratio
+- **Pure functional style** - always write tests using plain functions. Avoid class-based or OOP-style tests entirely unless a concrete technical requirement makes them unavoidable
+- **One test file per implementation file** - a 1:1 ratio between test files and implementation files
 - **Clear test names** - describe what is being tested and expected outcome
 
 ```python
@@ -72,6 +72,12 @@ async def test_index_handler_with_db_error(aiohttp_client, mocker):
 def test_email_validation(email: str, expected_valid: bool):
     result = validate_email(email)
     assert result.is_valid is expected_valid
+
+# ❌ DON'T:
+def test_validation_function():
+    assert validate_input("valid_input") is True
+    assert validate_input("invalid_input") is False
+    assert validate_input("another_case") is False
 ```
 
 ## Async Testing
@@ -100,6 +106,21 @@ async def test_user_creation_with_async_mock(mocker):
 ## Mock and Patch Strategy
 
 - **Flatten nested context managers** using comma syntax
+
+```python
+# ✅ DO:
+with patch("module.first_dependency", mock_value1), \
+    patch("module.second_dependency", mock_value2), \
+    patch("module.third_dependency", mock_value3):
+    # Test code
+
+# ❌ DON'T:
+with patch("module.first_dependency", mock_value1):
+    with patch("module.second_dependency", mock_value2):
+        with patch("module.third_dependency", mock_value3):
+            # Test code
+```
+
 - **Mock external dependencies** but not internal business logic
 - **Use pytest-mock** for consistent mocking patterns
 
@@ -118,11 +139,11 @@ def test_user_service_with_dependencies(mocker):
 
 ## Test Commands
 
-- **Run all tests**: `uv run pytest ./tests`
-- **Run specific test**: `uv run pytest ./tests/unit/infrastructure/test_config.py`
-- **Run with coverage**: `uv run pytest --cov=cityhive`
-- **Run only fast tests**: `uv run pytest -m "not slow"`
-- **Test aiohttp app**: `uv run pytest ./tests/unit/app/`
+- **Run all tests**: `uv run --frozen pytest ./tests`
+- **Run specific test**: `uv run --frozen pytest ./tests/unit/infrastructure/test_config.py`
+- **Run with coverage**: `uv run --frozen pytest --cov=cityhive`
+- **Run only fast tests**: `uv run --frozen pytest -m "not slow"`
+- **Test aiohttp app**: `uv run --frozen pytest ./tests/unit/app/`
 
 ## Test Markers
 
@@ -133,7 +154,7 @@ def test_user_service_with_dependencies(mocker):
 
 ## Test Quality
 
-- **No comments in tests** - tests should be self-documenting
+- **No comments in tests** - DO NOT add comments to tests. Tests should be understandable without comments. Refactor complex tests into smaller ones.
 - **Break complex tests** into smaller, focused tests
 - **All new features need tests** - no exceptions
 - **Bug fixes need regression tests** - prevent reoccurrence
