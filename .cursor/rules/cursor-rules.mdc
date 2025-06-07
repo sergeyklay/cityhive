@@ -3,53 +3,81 @@ description: Guidelines for creating and maintaining Cursor rules to ensure cons
 globs: **/*.mdc
 alwaysApply: false
 ---
+# Cursor Rules Best Practices
 
-# Cursor Rules
+**For rule maintenance:** How to create and maintain effective Cursor rules.
 
-- **Required Rule Structure:**
-  ```markdown
-  ---
-  description: Clear, one-line description of what the rule enforces
-  globs: path/to/files/*.ext, other/path/**/*
-  alwaysApply: boolean
-  ---
+## MDC File Structure
 
-  - **Main Points in Bold**
-    - Sub-points with details
-    - Examples and explanations
-  ```
+```markdown
+---
+description: Clear, one-line description of what the rule enforces
+globs: ["path/to/files/*.py", "other/path/**/*"]  # Optional: when to apply
+alwaysApply: true  # or false - use sparingly for always-applied rules
+---
+```
 
-- **File References:**
-  - Use `[filename](mdc:path/to/file)` ([filename](mdc:filename)) to reference files
-  - Example: [prisma.mdc](mdc:.cursor/rules/prisma.mdc) for rule references
-  - Example: [schema.prisma](mdc:prisma/schema.prisma) for code references
+# Rule Title
 
-- **Code Examples:**
-  - Use language-specific code blocks
-  ```python
-  // ✅ DO: Show good examples
-  good_example = True
+**Context trigger:** When this rule applies (e.g., "For Python files")
 
-  // ❌ DON'T: Show anti-patterns
-  bad_example = False
-  ```
+## Section Headers
 
-- **Rule Content Guidelines:**
-  - Start with high-level overview
-  - Include specific, actionable requirements
-  - Show examples of correct implementation
-  - Reference existing code when possible
-  - Keep rules DRY by referencing other rules
+- **Bold key points** with concise explanations
+- Use bullet points for clarity
+- Include both DO and DON'T examples
 
-- **Rule Maintenance:**
-  - Update rules when new patterns emerge
-  - Add examples from actual codebase
-  - Remove outdated patterns
-  - Cross-reference related rules
+```python
+# ✅ DO: Show good examples
+good_example = "clear and correct"
 
-- **Best Practices:**
-  - Use bullet points for clarity
-  - Keep descriptions concise
-  - Include both DO and DON'T examples
-  - Reference actual code over theoretical examples
-  - Use consistent formatting across rules
+# ❌ DON'T: Show what to avoid
+bad_example = "unclear or wrong"
+```
+
+## Rule Design Principles
+
+- **Token efficiency**: Keep rules under 100 lines when possible
+- **Single responsibility**: Each rule should focus on one concern
+- **Context-aware**: Use `globs` to apply rules only when relevant
+- **Actionable**: Provide specific guidance, not abstract concepts
+
+## Rule Organization Strategy
+
+- **Always-applied rules**: Only for essential project context (1-2 rules max)
+- **File-specific rules**: Use `globs` to target relevant file types
+- **Task-specific rules**: Activate only when working on specific domains
+
+## Common Rule Categories
+
+- **Project context**: Essential information about architecture and tech stack
+- **Code standards**: Language-specific style and quality guidelines
+- **Testing practices**: Testing strategies and patterns
+- **Tool usage**: Dependency management, linting, CI/CD workflows
+- **AI collaboration**: Guidelines for effective AI interaction
+
+## Effective Rule Content
+
+- **Start with overview**: Brief context of what the rule covers
+- **Use hierarchical structure**: Main points → sub-points → examples
+- **Provide commands**: Include actual command examples for tools
+- **Cross-reference**: Link to related rules with `[name](mdc:path)`
+- **Keep examples current**: Use real patterns from the codebase
+
+## Rule Maintenance
+
+- **Review regularly**: Update rules when patterns change
+- **Remove outdated**: Delete obsolete rules to reduce token usage
+- **Merge related**: Combine overlapping rules into focused guidelines
+- **Test effectiveness**: Monitor if AI follows the rules consistently
+
+## Performance Optimization
+
+- **Minimize always-applied rules**: Use only for critical project context
+- **Use specific globs**: Target rules to relevant file types
+- **Avoid redundancy**: Don't repeat information across rules
+- **Prioritize important**: Put key guidelines first in rule content
+
+---
+
+**Key Insight:** Good rules provide just-enough context for effective AI assistance without overwhelming the model with irrelevant information.

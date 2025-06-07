@@ -1,0 +1,82 @@
+---
+description: Dependency Management
+globs:
+alwaysApply: true
+---
+# Dependency Management
+
+**For dependency files:** Strict rules for managing project dependencies with uv.
+
+## Core Principles
+
+- **ONLY use `uv`** - `pip` is forbidden in this project
+- **Lock file committed** - `uv.lock` must be in version control
+- **Explicit versions** - avoid loose version constraints in production
+
+## Essential Commands
+
+```bash
+# ✅ DO: Correct uv usage
+uv add package-name                    # Add new dependency
+uv add --dev pytest                    # Add development dependency
+uv add package-name --upgrade-package  # Upgrade specific package
+uv run tool-name                       # Run tools via uv
+uv sync                               # Install from lock file
+
+# ❌ DON'T: Forbidden commands
+pip install package-name              # Never use pip
+uv pip install package-name          # Don't use uv pip
+uv add package-name@latest           # Don't use @latest syntax
+```
+
+## Dependency Categories
+
+- **Production dependencies**: Core runtime requirements
+- **Development dependencies**: Testing, linting, formatting tools
+- **Optional dependencies**: Feature-specific extras
+
+## pyproject.toml Structure
+
+```toml
+[project]
+name = "cityhive"
+version = "0.1.0"
+dependencies = [
+    "aiohttp>=3.8.0",
+    "pydantic>=2.0.0",
+    "sqlalchemy>=2.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "ruff>=0.1.0",
+    "coverage>=7.0.0",
+]
+```
+
+## Security and Updates
+
+- **Regular updates**: Keep dependencies current for security
+- **Audit dependencies**: Use `uv audit` to check for vulnerabilities
+- **Pin critical versions**: Lock versions for stability-critical dependencies
+- **Review new dependencies**: Evaluate necessity before adding
+
+## Integration with CI/CD
+
+- **Use `uv sync --frozen`** in CI to ensure reproducible builds
+- **Cache uv files** for faster CI runs
+- **Validate lock file** is up to date with pyproject.toml
+
+## Troubleshooting
+
+- **Clean environment**: `uv clean` if dependency resolution fails
+- **Regenerate lock**: Delete `uv.lock` and run `uv lock` for major updates
+- **Check conflicts**: `uv tree` to visualize dependency relationships
+
+---
+
+**Key Points:**
+- uv provides faster, more reliable dependency management than pip
+- Lock files ensure reproducible environments across all systems
+- Development and production dependencies should be clearly separated
