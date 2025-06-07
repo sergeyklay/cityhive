@@ -9,6 +9,7 @@ from unittest.mock import patch
 
 import pytest
 from pydantic import PostgresDsn, ValidationError
+from pydantic_settings import SettingsConfigDict
 
 from cityhive.infrastructure.config import (
     Config,
@@ -136,10 +137,12 @@ def test_production_config_defaults():
 def test_production_config_requires_database_uri_env():
     """Test production config requires DATABASE_URI environment variable."""
     with patch.dict(os.environ, {}, clear=True):
-        with pytest.raises(
-            ValueError, match="DATABASE_URI environment variable is required"
+        with patch(
+            "cityhive.infrastructure.config.ProductionConfig.model_config",
+            SettingsConfigDict(env_file=None),
         ):
-            ProductionConfig()
+            with pytest.raises(ValidationError, match="Field required"):
+                ProductionConfig()
 
 
 def test_production_config_with_env_database_uri():
@@ -159,7 +162,7 @@ def test_production_config_with_explicit_database_uri():
     """Test production config can accept explicit database_uri parameter."""
     test_uri = "postgresql://explicit:pass@explicit:5432/explicit_db"
 
-    config = ProductionConfig(database_uri=test_uri)
+    config = ProductionConfig(database_uri=test_uri)  # type: ignore[arg-type]
 
     assert (
         str(config.database_uri)

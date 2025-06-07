@@ -64,8 +64,10 @@ class Config(BaseSettings):
         """Ensure database URI uses asyncpg driver for async support."""
         if isinstance(v, str):
             if not v.startswith(("postgresql+asyncpg://", "postgres+asyncpg://")):
-                v = v.replace("postgresql://", "postgresql+asyncpg://")
-                v = v.replace("postgres://", "postgresql+asyncpg://")
+                if v.startswith("postgresql://"):
+                    v = v.replace("postgresql://", "postgresql+asyncpg://", 1)
+                elif v.startswith("postgres://"):
+                    v = v.replace("postgres://", "postgresql+asyncpg://", 1)
             return PostgresDsn(v)
         return v
 
@@ -109,8 +111,8 @@ class ProductionConfig(Config):
 
     debug: bool = False
 
-    database_uri: PostgresDsn | None = Field(
-        default=None,
+    database_uri: PostgresDsn = Field(  # type: ignore[assignment]
+        ...,
         description="Production database connection URI (set via DATABASE_URI env var)",
     )
 
@@ -119,18 +121,6 @@ class ProductionConfig(Config):
 
     app_host: str = Field(default="0.0.0.0")
     app_port: int = Field(default=8080)
-
-    def __init__(self, **kwargs):
-        """Initialize production config with required environment variables."""
-        if not kwargs.get("database_uri") and not os.getenv("DATABASE_URI"):
-            raise ValueError(
-                "DATABASE_URI environment variable is required for production"
-            )
-
-        if not kwargs.get("database_uri"):
-            kwargs["database_uri"] = os.getenv("DATABASE_URI")
-
-        super().__init__(**kwargs)
 
 
 class TestingConfig(Config):
