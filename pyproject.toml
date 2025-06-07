@@ -1,7 +1,7 @@
 [project]
 name = "cityhive"
 version = "0.1.0"
-description = "Add your description here"
+description = "Experimental aiohttp microservice for urban beehive management and technology exploration."
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
