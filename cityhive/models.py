@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime
 
 import sqlalchemy as sa
 from sqlalchemy import orm as so
@@ -48,30 +48,7 @@ class IdentityMixin:
         return f"<{self.__class__.__name__} id={self.id!r}>"
 
 
-class TimestampMixin:
-    """Mixin class to add timestamp fields to a SQLAlchemy model."""
-
-    created_at: so.Mapped[datetime] = so.mapped_column(
-        sa.DateTime(timezone=True),
-        nullable=False,
-        index=True,
-        server_default=func.now(),
-    )
-    updated_at: so.Mapped[datetime] = so.mapped_column(
-        sa.DateTime(timezone=True),
-        nullable=False,
-        index=True,
-        onupdate=func.now(),
-        server_default=func.now(),
-    )
-
-    def last_modified(self) -> str:
-        """Get the time of the last model update."""
-        modified = self.updated_at or self.created_at or datetime.now(timezone.utc)
-        return modified.strftime("%a, %d %b %Y %H:%M:%S GMT")
-
-
-class User(Base, IdentityMixin, TimestampMixin):
+class User(Base, IdentityMixin):
     """User model."""
 
     __tablename__ = "users"
@@ -93,4 +70,10 @@ class User(Base, IdentityMixin, TimestampMixin):
         nullable=False,
         unique=True,
         index=True,
+    )
+    registered_at: so.Mapped[datetime] = so.mapped_column(
+        sa.DateTime(timezone=True),
+        nullable=False,
+        index=True,
+        server_default=func.now(),
     )
