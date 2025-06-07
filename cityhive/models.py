@@ -45,7 +45,6 @@ class User(Base):
         primary_key=True,
         autoincrement=True,
     )
-
     name: so.Mapped[str] = so.mapped_column(
         sa.String(100),
         nullable=False,
@@ -87,7 +86,6 @@ class Hive(Base):
         primary_key=True,
         autoincrement=True,
     )
-
     user_id: so.Mapped[int] = so.mapped_column(
         sa.ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
@@ -129,7 +127,6 @@ class Sensor(Base):
         primary_key=True,
         autoincrement=True,
     )
-
     hive_id: so.Mapped[int] = so.mapped_column(
         sa.ForeignKey("hives.id", ondelete="CASCADE"),
         nullable=False,
@@ -166,7 +163,6 @@ class SensorReading(Base):
         primary_key=True,
         autoincrement=True,
     )
-
     sensor_id: so.Mapped[int] = so.mapped_column(
         sa.ForeignKey("sensors.id", ondelete="CASCADE"),
         nullable=False,
