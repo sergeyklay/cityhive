@@ -1,15 +1,22 @@
+"""
+Application entry point for running the CityHive web application.
+
+This module provides the main entry point when the app package is executed
+directly with `python -m cityhive.app`.
+"""
+
 from cityhive.app.app import main
 
 
-def run():
+def run() -> None:
     """
-    Run main() when current file is executed by an interpreter.
+    Run the main application.
 
-    This function ensures that main function is only executed when this
+    This function ensures that the main application is only executed when this
     file is run directly, not when imported as a module.
     """
-    if __name__ == "__main__":
-        main()
+    main()
 
 
-run()
+if __name__ == "__main__":
+    run()
