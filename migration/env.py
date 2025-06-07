@@ -74,7 +74,7 @@ config.set_section_option(ini_section, "DATABASE_URI", database_uri.replace("%",
 
 # add your model's MetaData object here
 # for 'autogenerate' support
-from cityhive import models
+from cityhive.domain import models
 
 target_metadata = models.Base.metadata
 
