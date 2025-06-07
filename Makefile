@@ -3,6 +3,52 @@ include defaults.mk
 # Extract package name from directory path
 PKG_DIR := $(notdir $(CURDIR))
 
+.PHONY: test
+test:
+	@echo $(CS)Running tests for package: $(PKG_DIR)$(CE)
+	uv run --frozen coverage erase
+	uv run --frozen coverage run -m pytest -svv ./tests
+	@echo
+
+.PHONY: ccov
+ccov:
+	@echo $(CS)Combine coverage reports for package: $(PKG_DIR)$(CE)
+	uv run --frozen coverage combine
+ifneq ($(CI_ENV),1)
+	uv run --frozen coverage report
+	uv run --frozen coverage html
+else
+	uv run --frozen coverage xml
+endif
+	@echo
+
+.PHONY: format
+format:
+	@echo $(CS)Formatting code for package: $(PKG_DIR)$(CE)
+	uv run --frozen ruff check --select I --fix ./
+	uv run --frozen ruff format --target-version py312 ./
+	@echo
+
+.PHONY: format-check
+format-check:
+	@echo $(CS)Checking formatting for package: $(PKG_DIR)$(CE)
+	uv run --frozen ruff format --diff --target-version py312 ./
+	@echo
+
+.PHONY: lint
+lint:
+	@echo $(CS)Running linters for package: $(PKG_DIR)$(CE)
+	uv run --frozen ruff check --target-version py312 ./
+	@echo
+
+.PHONY: clean
+clean:
+	@echo $(CS)Remove build and tests artefacts and directories$(CE)
+	find ./ -name '__pycache__' -delete -o -name '*.pyc' -delete
+	$(RM) -r ./.pytest_cache
+	$(RM) -r ./coverage
+	@echo
+
 .PHONY: migrate
 migrate:
 	@echo $(CS)Running migrations for $(PKG_DIR)$(CE)

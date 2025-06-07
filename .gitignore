@@ -26,3 +26,6 @@
 # Python cache.
 __pycache__
 *.py[cod]
+
+# Codecoverage stuff.
+/coverage
