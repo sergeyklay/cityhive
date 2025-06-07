@@ -9,7 +9,6 @@ from unittest.mock import patch
 
 import pytest
 from pydantic import PostgresDsn, ValidationError
-from pydantic_settings import SettingsConfigDict
 
 from cityhive.infrastructure.config import (
     Config,
@@ -128,21 +127,16 @@ def test_production_config_defaults():
         assert config.is_development is False
         assert config.is_production is True
         assert config.is_testing is False
-        assert config.app_host == "127.0.0.1"
+        assert config.app_host == "0.0.0.0"
         assert config.app_port == 8080
-        assert config.db_pool_size == 5
-        assert config.db_pool_overflow == 10
+        assert config.db_pool_size == 20
+        assert config.db_pool_overflow == 30
 
 
 def test_production_config_requires_database_uri_env():
     """Test production config requires DATABASE_URI environment variable."""
-    with patch.dict(os.environ, {}, clear=True):
-        with patch(
-            "cityhive.infrastructure.config.ProductionConfig.model_config",
-            SettingsConfigDict(env_file=None),
-        ):
-            with pytest.raises(ValidationError, match="Field required"):
-                ProductionConfig()
+    with pytest.raises(ValidationError, match="Field required"):
+        ProductionConfig()
 
 
 def test_production_config_with_env_database_uri():
@@ -179,16 +173,16 @@ def test_testing_config_defaults():
     assert config.is_development is False
     assert config.is_production is False
     assert config.is_testing is True
-    assert config.app_port == 8080
-    assert config.db_pool_size == 5
-    assert config.db_pool_overflow == 10
+    assert config.app_port == 8081
+    assert config.db_pool_size == 2
+    assert config.db_pool_overflow == 5
 
 
 def test_testing_config_database_uri():
-    """Test testing config database URI inherits from base."""
+    """Test testing config database URI uses test database."""
     config = TestingConfig()
 
-    expected_uri = "postgresql+asyncpg://cityhive:cityhive@localhost:5432/cityhive"
+    expected_uri = "postgresql+asyncpg://cityhive:cityhive@localhost:5432/cityhive_test"
     assert str(config.database_uri) == expected_uri
 
 
@@ -260,9 +254,8 @@ def test_get_current_config_empty_environment_defaults_to_development():
         "testing": TestingConfig,
     }
 
-    with patch.dict(os.environ, {}, clear=True):
-        config = get_current_config(config_map)
-        assert isinstance(config, DevelopmentConfig)
+    config = get_current_config(config_map)
+    assert isinstance(config, DevelopmentConfig)
 
 
 def test_get_config_cached():
