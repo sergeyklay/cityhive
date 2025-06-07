@@ -14,7 +14,7 @@ services:
     networks:
       cityhive:
         aliases:
-          - cityhive_db
+          - cityhive-db
     volumes:
       - cityhive_db:/var/lib/postgresql/data
     healthcheck:
