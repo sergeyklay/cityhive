@@ -29,10 +29,18 @@ alwaysApply: true
 
 ## Codebase Context Awareness
 
-- **Project structure**: Follow clean architecture (domain/infrastructure separation)
+- **Project structure**: Follow clean architecture (web/domain/infrastructure separation)
 - **Technology stack**: Python 3.12, aiohttp, Pydantic, SQLAlchemy, PostgreSQL
 - **Testing approach**: Pytest with functional style, comprehensive coverage required
 - **Dependency management**: uv only, never pip
+
+## Web Application Patterns
+
+- **Application factory**: Use async `create_app()` function pattern
+- **Type-safe keys**: Always use `web.AppKey` for application data storage
+- **Middleware order**: Logging → Error handling → Routes
+- **Database sessions**: Use cleanup contexts for SQLAlchemy async sessions
+- **Request handlers**: Follow `async def handler(request: web.Request) -> web.Response`
 
 ## Response Formatting
 
@@ -53,6 +61,14 @@ alwaysApply: true
 - **Follow conventions** - respect framework-specific patterns and idioms
 - **Security aware** - consider security implications of all suggestions
 - **Performance conscious** - avoid suggestions that degrade performance
+
+## aiohttp Best Practices
+
+- **Use AppKey for storage**: Type-safe application-wide data
+- **Cleanup contexts**: Manage resource lifecycle properly
+- **Middleware patterns**: Follow aiohttp middleware signature requirements
+- **Template integration**: Use aiohttp-jinja2 decorators correctly
+- **Health endpoints**: Include monitoring endpoints for production
 
 ---
 

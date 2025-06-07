@@ -23,6 +23,47 @@ def process_items(items):
     return [item["name"] for item in items]
 ```
 
+## Async Programming
+
+- **Async functions**: Use `async def` for I/O operations
+- **Await database calls**: All SQLAlchemy operations must be awaited
+- **Type hint async returns**: `-> Awaitable[ReturnType]` for complex cases
+
+```python
+# ✅ DO: Proper async handler
+async def get_user(request: web.Request) -> web.Response:
+    async with request.app[db_key]() as session:
+        result = await session.execute(select(User).where(User.id == user_id))
+        user = result.scalar_one_or_none()
+    return web.json_response({"user": user.dict() if user else None})
+
+# ❌ DON'T: Sync operations in async context
+async def get_user(request: web.Request) -> web.Response:
+    session.execute(select(User))  # Missing await
+```
+
+## aiohttp Patterns
+
+- **Use AppKey**: Type-safe application data storage
+- **Request handlers**: Always accept `web.Request`, return `web.Response`
+- **Template decorators**: Use `@aiohttp_jinja2.template()` for HTML responses
+
+```python
+# ✅ DO: Type-safe app keys
+config_key = web.AppKey("config", Config)
+app[config_key] = config
+
+# ✅ DO: Proper handler signature
+async def handler(request: web.Request) -> web.Response:
+    config = request.app[config_key]
+    return web.json_response({"status": "ok"})
+
+# ✅ DO: Template rendering
+@aiohttp_jinja2.template("page.html")
+async def page_handler(request: web.Request) -> dict[str, Any]:
+    return {"title": "Page Title"}
+```
+
 ## Code Style
 
 - **Line length**: 88 characters maximum (Ruff default)
@@ -47,13 +88,18 @@ def calculate_discount(price: float, user_type: str) -> float:
 - **Specific exceptions**: `ValueError`, `TypeError` over generic `Exception`
 - **Error chaining**: Use `raise ... from err` for context
 - **Early returns**: Handle errors at function start
+- **HTTP exceptions**: Use `web.HTTPException` subclasses
 
 ```python
-# ✅ DO:
+# ✅ DO: Proper error chaining
 try:
-    result = risky_operation()
+    result = await risky_operation()
 except APIError as e:
     raise ProcessingError("Failed to process data") from e
+
+# ✅ DO: HTTP exceptions
+if not user:
+    raise web.HTTPNotFound(text="User not found")
 ```
 
 ## Logging
@@ -80,6 +126,21 @@ logger.info(f"Processing user {user_id}")
 - **Pure functions preferred** - clear inputs/outputs, no side effects
 - **Classes only for**: Data models (Pydantic), external clients, complex state
 - **No global state** - pass dependencies explicitly
+- **Middleware functions**: Follow aiohttp middleware pattern
+
+```python
+# ✅ DO: Proper middleware pattern
+@web.middleware
+async def logging_middleware(
+    request: web.Request,
+    handler: Handler
+) -> web.StreamResponse:
+    start_time = request.loop.time()
+    response = await handler(request)
+    duration = request.loop.time() - start_time
+    logger.info("Request completed in %.3fs", duration)
+    return response
+```
 
 ## Imports
 

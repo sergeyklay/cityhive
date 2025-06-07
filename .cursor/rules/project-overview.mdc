@@ -9,6 +9,7 @@ alwaysApply: true
 
 ## Project Structure
 
+- **Web Application Layer**: `cityhive/app/` - aiohttp web server, routes, views, middleware
 - **Domain Layer**: `cityhive/domain/` - Business logic, services, and models
 - **Infrastructure Layer**: `cityhive/infrastructure/` - External integrations, database, config
 - **Tests**: `tests/unit/` and `tests/integration/` - Comprehensive test coverage required
@@ -16,21 +17,32 @@ alwaysApply: true
 ## Technology Stack
 
 - **Language**: Python 3.12
-- **Database**: PostgreSQL + PostGIS
+- **Web Framework**: aiohttp with Jinja2 templates
+- **Database**: PostgreSQL + PostGIS with SQLAlchemy async
 - **Testing**: Pytest with coverage
 - **Package Management**: uv (NEVER pip)
 - **Linting**: Ruff (configured in pyproject.toml)
 
+## Web Application Architecture
+
+- **Application Factory**: Async `create_app()` function with dependency injection
+- **Type-Safe Storage**: `web.AppKey` for application-wide data
+- **Middleware Stack**: Logging → Error handling → Routes
+- **Database Context**: SQLAlchemy async sessions with cleanup contexts
+- **Health Monitoring**: `/health` endpoint for production monitoring
+
 ## Key Development Principles
 
-- **Clean Architecture**: Separate concerns between domain and infrastructure
+- **Clean Architecture**: Separate concerns between web, domain, and infrastructure
 - **Type Safety**: Type hints required throughout
 - **Test-Driven**: All features need tests
 - **Domain-Driven**: Business logic stays in domain layer
+- **Async-First**: All I/O operations use async/await patterns
 
 ## Essential Commands
 
 - **Install dependencies**: `uv add package-name`
+- **Run application**: `uv run python -m cityhive.app`
 - **Run tests**: `uv run pytest ./tests`
 - **Lint code**: `uv run ruff check`
 - **Format code**: `uv run ruff format`
@@ -40,6 +52,7 @@ alwaysApply: true
 - PostgreSQL with PostGIS extensions
 - Alembic migrations in `migration/` directory
 - Development database via docker-compose
+- Async SQLAlchemy with connection pooling
 
 ---
 

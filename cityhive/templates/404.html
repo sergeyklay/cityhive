@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% set title = "Page Not Found" %}
+
+{% block content %}
+<p>
+    The requested URL was not found on the server.
+    If you entered the URL manually please check your spelling and try again.
+</p>
+
+<a href="{{ url('index') }}">Back to main</a>
+{% endblock %}

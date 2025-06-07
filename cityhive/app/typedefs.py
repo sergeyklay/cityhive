@@ -1,0 +1,20 @@
+"""
+Type definitions and application keys for the aiohttp application.
+
+This module defines the type-safe keys used to store and retrieve
+application-wide data in the aiohttp Application instance.
+"""
+
+from aiohttp import web
+from sqlalchemy.ext.asyncio import async_sessionmaker
+
+from cityhive.infrastructure.config import Config
+
+# Application keys for type-safe data storage
+# These keys ensure type safety when storing/retrieving data from app dict
+
+config_key = web.AppKey("config", Config)
+"""Application configuration key for storing Config instance."""
+
+db_key = web.AppKey("database", async_sessionmaker)
+"""Database session maker key for storing SQLAlchemy async session factory."""
