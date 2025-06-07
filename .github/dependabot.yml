@@ -1,0 +1,26 @@
+version: 2
+
+updates:
+  # Python dependencies
+  - package-ecosystem: uv
+    versioning-strategy: increase
+    insecure-external-code-execution: allow
+    directory: "/" # lock file lives at the repo root
+    schedule:
+      interval: daily
+    assignees: [sergeyklay]
+    target-branch: main
+    open-pull-requests-limit: 20
+    commit-message:
+      prefix: "chore(deps): "
+      prefix-development: "chore(deps-dev): "
+
+  # GitHub Actions dependencies
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: daily
+    target-branch: main
+    assignees: [sergeyklay]
+    commit-message:
+      prefix: "ci: "
