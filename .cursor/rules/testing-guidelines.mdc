@@ -1,0 +1,107 @@
+---
+description: Testing Guidelines
+globs: globs: **/test_*.py
+alwaysApply: false
+---
+# Testing Guidelines
+
+**For test files:** Comprehensive testing practices for reliable code.
+
+## Test Structure
+
+- **Pure functional style** - no test classes unless absolutely necessary
+- **One test file per implementation file** - maintain 1:1 ratio
+- **Clear test names** - describe what is being tested and expected outcome
+
+```python
+# ✅ DO: Descriptive test name
+def test_user_registration_with_valid_email_creates_user():
+    # Test implementation
+
+# ❌ DON'T: Vague test name
+def test_user():
+    # Test implementation
+```
+
+## Test Organization
+
+- **Arrange-Act-Assert pattern** clearly separated
+- **Use fixtures** for setup/teardown instead of setUp/tearDown methods
+- **Parametrize tests** to reduce duplication
+
+```python
+# ✅ DO: Use parametrize for multiple test cases
+@pytest.mark.parametrize(
+    "email,expected_valid",
+    [
+        ("user@example.com", True),
+        ("invalid-email", False),
+        ("", False),
+    ],
+)
+def test_email_validation(email: str, expected_valid: bool):
+    result = validate_email(email)
+    assert result.is_valid is expected_valid
+```
+
+## Mock and Patch Strategy
+
+- **Flatten nested context managers** using comma syntax
+- **Mock external dependencies** but not internal business logic
+- **Use pytest-mock** for consistent mocking patterns
+
+```python
+# ✅ DO: Flat context managers
+def test_user_service_with_dependencies(mocker):
+    mock_db = mocker.patch("cityhive.infrastructure.database.get_session")
+    mock_email = mocker.patch("cityhive.infrastructure.email.send_email")
+
+    result = user_service.create_user(user_data)
+
+    assert result.success
+    mock_db.assert_called_once()
+    mock_email.assert_called_once()
+```
+
+## Test Commands
+
+- **Run all tests**: `uv run pytest ./tests`
+- **Run specific test**: `uv run pytest ./tests/unit/infrastructure/test_config.py`
+- **Run with coverage**: `uv run pytest --cov=cityhive`
+- **Run only fast tests**: `uv run pytest -m "not slow"`
+
+## Test Markers
+
+- **Mark slow tests**: `@pytest.mark.slow` for integration tests
+- **Mark integration tests**: `@pytest.mark.integration`
+- **Skip tests conditionally**: Use `@pytest.mark.skipif` with clear reason
+
+## Test Quality
+
+- **No comments in tests** - tests should be self-documenting
+- **Break complex tests** into smaller, focused tests
+- **All new features need tests** - no exceptions
+- **Bug fixes need regression tests** - prevent reoccurrence
+
+## Fixtures
+
+- **Scope appropriately**: session, module, function based on needs
+- **Use dependency injection**: pass fixtures as parameters
+- **Clean setup/teardown**: ensure tests don't affect each other
+
+```python
+# ✅ DO: Well-scoped fixture
+@pytest.fixture(scope="function")
+def user_data():
+    return {
+        "email": "test@example.com",
+        "name": "Test User",
+        "age": 25
+    }
+```
+
+---
+
+**See also:**
+- [python-standards.mdc](mdc:.cursor/rules/python-standards.mdc) for general Python conventions
+- Pytest documentation for advanced patterns
