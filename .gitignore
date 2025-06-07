@@ -8,6 +8,9 @@
 # Virtual Environments.
 /.venv
 
+# Do not ignore .cursor directory
+!.cursor
+
 # Application compose environment variables
 .env
 

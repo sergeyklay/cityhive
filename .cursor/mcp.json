@@ -1,0 +1,21 @@
+{
+  "mcpServers": {
+    "cityhive_db": {
+      "type": "stdio",
+      "command": "uv",
+      "args": [
+        "run",
+        "--python",
+        "./.venv/bin/python",
+        "./.cursor/postgres.py",
+        "--db",
+        "postgresql://cityhive:cityhive@127.0.0.1:5432/cityhive",
+        "--debug",
+        "--min-connections",
+        "1",
+        "--max-connections",
+        "10"
+      ]
+    }
+  }
+}
