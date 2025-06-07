@@ -4,8 +4,9 @@ from datetime import date, datetime
 import sqlalchemy as sa
 from geoalchemy2 import Geography
 from sqlalchemy import orm as so
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.mutable import MutableDict
 from sqlalchemy.sql import func
 
 
@@ -45,16 +46,19 @@ class User(Base):
         primary_key=True,
         autoincrement=True,
     )
+
     name: so.Mapped[str] = so.mapped_column(
         sa.String(100),
         nullable=False,
     )
+
     email: so.Mapped[str] = so.mapped_column(
         sa.String(254),
         unique=True,
         nullable=False,
         index=True,
     )
+
     api_key: so.Mapped[UUID] = so.mapped_column(
         UUID(as_uuid=True),
         default=uuid.uuid4,
@@ -63,6 +67,7 @@ class User(Base):
         unique=True,
         index=True,
     )
+
     registered_at: so.Mapped[datetime] = so.mapped_column(
         sa.DateTime(timezone=True),
         nullable=False,
@@ -86,23 +91,28 @@ class Hive(Base):
         primary_key=True,
         autoincrement=True,
     )
+
     user_id: so.Mapped[int] = so.mapped_column(
         sa.ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )
+
     name: so.Mapped[str] = so.mapped_column(
         sa.Text,
         nullable=False,
     )
+
     location: so.Mapped[Geography | None] = so.mapped_column(
         Geography(geometry_type="POINT", srid=4326),
         nullable=True,
     )
+
     frame_type: so.Mapped[str] = so.mapped_column(
         sa.Text,
         nullable=True,
     )
+
     installed_at: so.Mapped[datetime] = so.mapped_column(
         sa.DateTime(timezone=True),
         nullable=False,
@@ -111,8 +121,12 @@ class Hive(Base):
     )
 
     user: so.Mapped["User"] = so.relationship(back_populates="hives")
+
     sensors: so.Mapped[list["Sensor"]] = so.relationship(back_populates="hive")
+
     inspections: so.Mapped[list["Inspection"]] = so.relationship(back_populates="hive")
+
+    harvests: so.Mapped[list["Harvest"]] = so.relationship(back_populates="hive")
 
     def __repr__(self):
         """Returns the object representation in string format."""
@@ -128,15 +142,18 @@ class Sensor(Base):
         primary_key=True,
         autoincrement=True,
     )
+
     hive_id: so.Mapped[int] = so.mapped_column(
         sa.ForeignKey("hives.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )
+
     type: so.Mapped[str] = so.mapped_column(
         sa.Text,
         nullable=False,
     )
+
     mounted_at: so.Mapped[datetime] = so.mapped_column(
         sa.DateTime(timezone=True),
         nullable=False,
@@ -145,6 +162,7 @@ class Sensor(Base):
     )
 
     hive: so.Mapped["Hive"] = so.relationship(back_populates="sensors")
+
     readings: so.Mapped[list["SensorReading"]] = so.relationship(
         back_populates="sensor"
     )
@@ -164,15 +182,18 @@ class SensorReading(Base):
         primary_key=True,
         autoincrement=True,
     )
+
     sensor_id: so.Mapped[int] = so.mapped_column(
         sa.ForeignKey("sensors.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )
+
     value: so.Mapped[float] = so.mapped_column(
         sa.Double,
         nullable=False,
     )
+
     recorded_at: so.Mapped[datetime] = so.mapped_column(
         sa.DateTime(timezone=True),
         nullable=False,
@@ -196,19 +217,23 @@ class Inspection(Base):
         primary_key=True,
         autoincrement=True,
     )
+
     hive_id: so.Mapped[int] = so.mapped_column(
         sa.ForeignKey("hives.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )
+
     scheduled_for: so.Mapped[date] = so.mapped_column(
         sa.Date,
         nullable=False,
     )
+
     notes: so.Mapped[str | None] = so.mapped_column(
         sa.Text,
         nullable=True,
     )
+
     created_at: so.Mapped[datetime] = so.mapped_column(
         sa.DateTime(timezone=True),
         nullable=False,
@@ -221,3 +246,44 @@ class Inspection(Base):
     def __repr__(self):
         """Returns the object representation in string format."""
         return f"<Inspection id={self.id!r}>"
+
+
+class Harvest(Base):
+    """Harvest model."""
+
+    __tablename__ = "harvests"
+
+    id: so.Mapped[int] = so.mapped_column(
+        primary_key=True,
+        autoincrement=True,
+    )
+
+    hive_id: so.Mapped[int] = so.mapped_column(
+        sa.ForeignKey("hives.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+    yield_kg: so.Mapped[float] = so.mapped_column(
+        sa.Double,
+        nullable=False,
+    )
+
+    # Note: Always use MutableDict.as_mutable(JSONB) for JSON columns you want to
+    # mutate in-place. Never use plain dict with JSONB if you want in-place mutation
+    # tracking.
+    quality_metrics: so.Mapped[dict | None] = so.mapped_column(
+        MutableDict.as_mutable(JSONB),
+        nullable=True,
+    )
+
+    harvested_at: so.Mapped[date] = so.mapped_column(
+        sa.Date,
+        nullable=False,
+    )
+
+    hive: so.Mapped["Hive"] = so.relationship(back_populates="harvests")
+
+    def __repr__(self):
+        """Returns the object representation in string format."""
+        return f"<Harvest id={self.id!r}>"
