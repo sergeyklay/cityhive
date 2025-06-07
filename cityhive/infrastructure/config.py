@@ -6,16 +6,20 @@ with class inheritance for different environments (development, production, test
 
 import os
 from functools import lru_cache
+from pathlib import Path
 
 from pydantic import Field, PostgresDsn, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+PROJECT_DIR = Path(__file__).parent.parent
+BASE_DIR = PROJECT_DIR.parent
 
 
 class Config(BaseSettings):
     """Base configuration class for all environments."""
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=BASE_DIR / ".env",
         env_file_encoding="utf-8",
         case_sensitive=False,
         extra="ignore",
