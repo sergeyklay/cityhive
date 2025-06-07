@@ -1,7 +1,9 @@
+import uuid
 from datetime import datetime, timezone
 
 import sqlalchemy as sa
 from sqlalchemy import orm as so
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql import func
 
@@ -67,3 +69,28 @@ class TimestampMixin:
         """Get the time of the last model update."""
         modified = self.updated_at or self.created_at or datetime.now(timezone.utc)
         return modified.strftime("%a, %d %b %Y %H:%M:%S GMT")
+
+
+class User(Base, IdentityMixin, TimestampMixin):
+    """User model."""
+
+    __tablename__ = "users"
+
+    name: so.Mapped[str] = so.mapped_column(
+        sa.String(100),
+        nullable=False,
+    )
+    email: so.Mapped[str] = so.mapped_column(
+        sa.String(254),
+        unique=True,
+        nullable=False,
+        index=True,
+    )
+    api_key: so.Mapped[UUID] = so.mapped_column(
+        UUID(as_uuid=True),
+        default=uuid.uuid4,
+        server_default=sa.text("gen_random_uuid()"),
+        nullable=False,
+        unique=True,
+        index=True,
+    )
