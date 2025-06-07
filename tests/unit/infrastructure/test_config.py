@@ -16,11 +16,7 @@ from cityhive.infrastructure.config import (
     ProductionConfig,
     TestingConfig,
     get_config,
-    get_config_for_environment,
     get_current_config,
-    get_development_config,
-    get_production_config,
-    get_testing_config,
 )
 
 
@@ -33,7 +29,7 @@ def test_base_config_default_values():
     assert str(config.database_uri).startswith("postgresql+asyncpg://")
     assert config.db_pool_size == 5
     assert config.db_pool_overflow == 10
-    assert config.app_host == "127.0.0.1"
+    assert config.app_host == "0.0.0.0"
     assert config.app_port == 8080
 
 
@@ -129,8 +125,8 @@ def test_production_config_defaults():
         assert config.is_testing is False
         assert config.app_host == "0.0.0.0"
         assert config.app_port == 8080
-        assert config.db_pool_size == 20
-        assert config.db_pool_overflow == 30
+        assert config.db_pool_size == 5
+        assert config.db_pool_overflow == 10
 
 
 def test_production_config_requires_database_uri_env():
@@ -173,9 +169,9 @@ def test_testing_config_defaults():
     assert config.is_development is False
     assert config.is_production is False
     assert config.is_testing is True
-    assert config.app_port == 8081
-    assert config.db_pool_size == 2
-    assert config.db_pool_overflow == 5
+    assert config.app_port == 8080
+    assert config.db_pool_size == 5
+    assert config.db_pool_overflow == 10
 
 
 def test_testing_config_database_uri():
@@ -247,11 +243,12 @@ def test_get_current_config_invalid_environment():
 
 
 def test_get_current_config_empty_environment_defaults_to_development():
-    """Test get_current_config defaults to development when APP_ENV is empty."""
+    """Test get_current_config defaults to 'default' when APP_ENV is empty."""
     config_map = {
         "development": DevelopmentConfig,
         "production": ProductionConfig,
         "testing": TestingConfig,
+        "default": DevelopmentConfig,
     }
 
     config = get_current_config(config_map)
@@ -266,62 +263,6 @@ def test_get_config_cached():
 
         assert config1 is config2
         assert isinstance(config1, DevelopmentConfig)
-
-
-@pytest.mark.parametrize(
-    "env_name,expected_config_type",
-    [
-        ("development", DevelopmentConfig),
-        ("production", ProductionConfig),
-        ("testing", TestingConfig),
-        ("DEVELOPMENT", DevelopmentConfig),
-        ("Production", ProductionConfig),
-    ],
-)
-def test_get_config_for_environment(env_name: str, expected_config_type: type[Config]):
-    """Test get_config_for_environment returns correct config type."""
-    if expected_config_type == ProductionConfig:
-        with patch.dict(
-            os.environ, {"DATABASE_URI": "postgresql://test:test@test:5432/test"}
-        ):
-            config = get_config_for_environment(env_name)
-    else:
-        config = get_config_for_environment(env_name)
-
-    assert isinstance(config, expected_config_type)
-
-
-def test_get_config_for_environment_invalid():
-    """Test get_config_for_environment raises error for invalid environment."""
-    with pytest.raises(ValueError, match="Invalid environment 'invalid'"):
-        get_config_for_environment("invalid")
-
-
-def test_get_development_config():
-    """Test get_development_config returns DevelopmentConfig instance."""
-    config = get_development_config()
-
-    assert isinstance(config, DevelopmentConfig)
-    assert config.is_development is True
-
-
-def test_get_production_config():
-    """Test get_production_config returns ProductionConfig instance."""
-    with patch.dict(
-        os.environ, {"DATABASE_URI": "postgresql://test:test@test:5432/test"}
-    ):
-        config = get_production_config()
-
-        assert isinstance(config, ProductionConfig)
-        assert config.is_production is True
-
-
-def test_get_testing_config():
-    """Test get_testing_config returns TestingConfig instance."""
-    config = get_testing_config()
-
-    assert isinstance(config, TestingConfig)
-    assert config.is_testing is True
 
 
 def test_config_reads_from_environment():

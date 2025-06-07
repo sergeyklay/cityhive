@@ -47,7 +47,7 @@ class Config(BaseSettings):
     )
 
     app_host: str = Field(
-        default="127.0.0.1",
+        default="0.0.0.0",
         description="Host address to bind the HTTP server",
     )
 
@@ -99,12 +99,6 @@ class DevelopmentConfig(Config):
         description="Development database connection URI",
     )
 
-    db_pool_size: int = Field(default=5)
-    db_pool_overflow: int = Field(default=10)
-
-    app_host: str = Field(default="127.0.0.1")
-    app_port: int = Field(default=8080)
-
 
 class ProductionConfig(Config):
     """Production environment configuration."""
@@ -115,12 +109,6 @@ class ProductionConfig(Config):
         ...,
         description="Production database connection URI (set via DATABASE_URI env var)",
     )
-
-    db_pool_size: int = Field(default=20)
-    db_pool_overflow: int = Field(default=30)
-
-    app_host: str = Field(default="0.0.0.0")
-    app_port: int = Field(default=8080)
 
 
 class TestingConfig(Config):
@@ -136,12 +124,6 @@ class TestingConfig(Config):
         description="Testing database connection URI",
     )
 
-    db_pool_size: int = Field(default=2)
-    db_pool_overflow: int = Field(default=5)
-
-    app_host: str = Field(default="127.0.0.1")
-    app_port: int = Field(default=8081)
-
 
 def get_current_config(config_map: dict[str, type[Config]]) -> Config:
     """Get the current configuration instance based on environment.
@@ -155,7 +137,7 @@ def get_current_config(config_map: dict[str, type[Config]]) -> Config:
     Raises:
         ValueError: If the environment configuration is invalid
     """
-    env = os.getenv("APP_ENV", "development").lower()
+    env = os.getenv("APP_ENV", "default").lower()
     config_class = config_map.get(env)
 
     if not config_class:
@@ -193,43 +175,3 @@ def get_config() -> Config:
         >>> assert config is config2
     """
     return get_current_config(config_registry)
-
-
-def get_config_for_environment(env: str) -> Config:
-    """Get configuration for a specific environment.
-
-    This function is useful for testing or when you need to override
-    the environment setting programmatically.
-
-    Args:
-        env: Target environment name.
-
-    Returns:
-        Config instance configured for the specified environment.
-
-    Examples:
-        >>> test_config = get_config_for_environment("testing")
-        >>> assert test_config.is_testing
-        >>> assert not test_config.debug
-    """
-    config_class = config_registry.get(env.lower())
-    if not config_class:
-        available = ", ".join(config_registry.keys())
-        raise ValueError(f"Invalid environment '{env}'. Available: {available}")
-
-    return config_class()
-
-
-def get_development_config() -> DevelopmentConfig:
-    """Get development environment configuration."""
-    return DevelopmentConfig()
-
-
-def get_production_config() -> ProductionConfig:
-    """Get production environment configuration."""
-    return ProductionConfig()
-
-
-def get_testing_config() -> TestingConfig:
-    """Get testing environment configuration."""
-    return TestingConfig()
