@@ -25,9 +25,22 @@ if dotenv_path.exists():
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
+# Allow DATABASE_URI override via environment variable, this allows running
+# migrations with a override for the database URI:
+#
+#     $ DATABASE_URI=... alembic upgrade head
+#
 database_uri = os.getenv("DATABASE_URI", None)
 if not database_uri or not str(database_uri).strip():
+    # This should be imported after the dotenv is loaded
+    from cityhive.infrastructure.config import get_config
+
+    database_uri = get_config().database_uri
+
+if not database_uri or not str(database_uri).strip():
     raise ValueError("DATABASE_URI environment variable is not set")
+
+database_uri = str(database_uri).strip()
 
 # Check if we're running in Docker
 is_docker = os.path.exists("/.dockerenv") or os.getenv("DOCKER") == "true"
@@ -74,7 +87,7 @@ config.set_section_option(ini_section, "DATABASE_URI", database_uri.replace("%",
 
 # add your model's MetaData object here
 # for 'autogenerate' support
-from cityhive import models
+from cityhive.domain import models
 
 target_metadata = models.Base.metadata
 

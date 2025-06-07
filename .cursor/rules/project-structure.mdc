@@ -21,14 +21,28 @@ alwaysApply: true
 
 - **Database:** This project uses PostgreSQL + PostGIS database (see [docker-compose.yml](mdc:docker-compose.yml)).
 
+## Patterns & Best Practices
+
+- **Domain Layer:** Business logic in `domain/` (services, workflows, models).
+- **Infrastructure Layer:** DB, storage, config, etc.
+- **Testing:** Unit tests live at `tests/unit/` and and integration at `tests/integration/`.
+- **Migrations:** Alembic for DB migrations in [migration/](mdc:migration).
+- **Type Hints:** Required throughout (see [python-coding-standards.mdc](mdc:python-coding-standards.mdc)).
+- **Ruff:** Linting/formatting enforced (see [pyproject.toml](mdc:pyproject.toml)).
+
+## Onboarding & Documentation
+
+- **README:** [README.md](mdc:README.md) for high-level overview.
+- **CONTRIBUTING:** [CONTRIBUTING.md](mdc:CONTRIBUTING.md) for contribution guidelines.
+- **Cursor Rules:** See `.cursor/rules/*.mdc` for enforced standards and project-specific rules.
+
 ## Dependency Management
 
 - ONLY use `uv`, NEVER `pip`
 - Installation: `uv add package`
 - Running tools: `uv run tool`
-- Upgrading: `uv add --dev package --upgrade-package package`
+- Upgrading: `uv add package --upgrade-package package`
 - FORBIDDEN: `uv pip install`, `@latest` syntax
-
 
 ## Linting
 
@@ -56,6 +70,8 @@ alwaysApply: true
 ---
 
 **See also:**
+- [python-coding-standards.mdc](mdc:python-coding-standards.mdc)
 - [pyproject.toml](mdc:pyproject.toml)
 - [docker-compose.yml](mdc:docker-compose.yml)
 - [README.md](mdc:README.md)
+- [CONTRIBUTING.md](mdc:CONTRIBUTING.md)

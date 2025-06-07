@@ -11,6 +11,7 @@ dependencies = [
     "asyncpg>=0.30.0",
     "geoalchemy2>=0.17.1",
     "pydantic>=2.11.5",
+    "pydantic-settings>=2.9.1",
     "python-dotenv>=1.1.0",
     "pyyaml>=6.0.2",
     "sqlalchemy[asyncio]>=2.0.41",
@@ -30,12 +31,16 @@ testing = [
     "pytest>=8.4.0",
     "pytest-aiohttp>=1.1.0",
     "pytest-asyncio>=1.0.0",
+    "pytest-mock>=3.14.1",
 ]
 
 [tool.pytest.ini_options]
 addopts = "--verbose --durations=25 --no-header"
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
+filterwarnings = [
+    "ignore:cannot collect test class.*because it has a __init__ constructor:pytest.PytestCollectionWarning",
+]
 
 [tool.coverage.report]
 # Set the number of decimal places in coverage percentage
