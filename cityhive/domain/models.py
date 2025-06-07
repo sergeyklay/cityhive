@@ -149,7 +149,7 @@ class Sensor(Base):
         index=True,
     )
 
-    type: so.Mapped[str] = so.mapped_column(
+    sensor_type: so.Mapped[str] = so.mapped_column(
         sa.Text,
         nullable=False,
     )
