@@ -36,24 +36,15 @@ class Base(so.DeclarativeBase):
         return result
 
 
-class IdentityMixin:
-    """Mixin class to add identity fields to a SQLAlchemy model."""
+class User(Base):
+    """User model."""
+
+    __tablename__ = "users"
 
     id: so.Mapped[int] = so.mapped_column(
         primary_key=True,
         autoincrement=True,
     )
-
-    def __repr__(self):
-        """Returns the object representation in string format."""
-        return f"<{self.__class__.__name__} id={self.id!r}>"
-
-
-class User(Base, IdentityMixin):
-    """User model."""
-
-    __tablename__ = "users"
-
     name: so.Mapped[str] = so.mapped_column(
         sa.String(100),
         nullable=False,
@@ -81,12 +72,20 @@ class User(Base, IdentityMixin):
 
     hives: so.Mapped[list["Hive"]] = so.relationship(back_populates="user")
 
+    def __repr__(self):
+        """Returns the object representation in string format."""
+        return f"<User id={self.id!r}>"
 
-class Hive(Base, IdentityMixin):
+
+class Hive(Base):
     """Hive model."""
 
     __tablename__ = "hives"
 
+    id: so.Mapped[int] = so.mapped_column(
+        primary_key=True,
+        autoincrement=True,
+    )
     user_id: so.Mapped[int] = so.mapped_column(
         sa.ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
@@ -114,12 +113,20 @@ class Hive(Base, IdentityMixin):
     user: so.Mapped["User"] = so.relationship(back_populates="hives")
     sensors: so.Mapped[list["Sensor"]] = so.relationship(back_populates="hive")
 
+    def __repr__(self):
+        """Returns the object representation in string format."""
+        return f"<Hive id={self.id!r}>"
 
-class Sensor(Base, IdentityMixin):
+
+class Sensor(Base):
     """Sensor model."""
 
     __tablename__ = "sensors"
 
+    id: so.Mapped[int] = so.mapped_column(
+        primary_key=True,
+        autoincrement=True,
+    )
     hive_id: so.Mapped[int] = so.mapped_column(
         sa.ForeignKey("hives.id", ondelete="CASCADE"),
         nullable=False,
@@ -137,3 +144,43 @@ class Sensor(Base, IdentityMixin):
     )
 
     hive: so.Mapped["Hive"] = so.relationship(back_populates="sensors")
+    readings: so.Mapped[list["SensorReading"]] = so.relationship(
+        back_populates="sensor"
+    )
+
+    def __repr__(self):
+        """Returns the object representation in string format."""
+        return f"<Sensor id={self.id!r}>"
+
+
+class SensorReading(Base):
+    """Sensor reading model."""
+
+    __tablename__ = "sensor_readings"
+
+    id: so.Mapped[int] = so.mapped_column(
+        sa.BigInteger,
+        primary_key=True,
+        autoincrement=True,
+    )
+    sensor_id: so.Mapped[int] = so.mapped_column(
+        sa.ForeignKey("sensors.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    value: so.Mapped[float] = so.mapped_column(
+        sa.Double,
+        nullable=False,
+    )
+    recorded_at: so.Mapped[datetime] = so.mapped_column(
+        sa.DateTime(timezone=True),
+        nullable=False,
+        index=True,
+        server_default=func.now(),
+    )
+
+    sensor: so.Mapped["Sensor"] = so.relationship(back_populates="readings")
+
+    def __repr__(self):
+        """Returns the object representation in string format."""
+        return f"<SensorReading id={self.id!r}>"
