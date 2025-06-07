@@ -28,3 +28,30 @@ testing = [
     "pytest-aiohttp>=1.1.0",
     "pytest-asyncio>=1.0.0",
 ]
+
+[tool.ruff]
+target-version = "py312"
+
+[tool.ruff.lint]
+extend-select = [
+    "I",      # All imports
+    "E",      # All errors
+    "W",      # All warnings
+    "F",      # All false positives
+    "C",      # All complexity
+    "Q",      # All quality
+    "UP006",  # Enforcing the use of PEP 585 syntax
+    "UP007",  # Enforcing the use of PEP 604 syntax
+    "RET505", # Unnecessary `else` after `return` statement
+    "B006",   # Do not use mutable data structures for argument defaults
+    "B904",   # Use `raise ... from err` instead of `raise ...`
+    "B905",   # Specify `strict` when using `zip()`
+    "G004",   # Don't use f-strings for string interpolation in logging
+]
+
+ignore = [
+    "E402", # module level import not at top of file
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["cityhive"]
