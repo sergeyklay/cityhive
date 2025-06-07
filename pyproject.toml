@@ -7,6 +7,7 @@ requires-python = ">=3.12"
 dependencies = [
     "aiohttp-jinja2>=1.6",
     "aiohttp[speedups]>=3.12.7",
+    "alembic[tz]>=1.16.1",
     "asyncpg>=0.30.0",
     "pyyaml>=6.0.2",
     "sqlalchemy[asyncio]>=2.0.41",
@@ -14,7 +15,13 @@ dependencies = [
 ]
 
 [dependency-groups]
-dev = ["ruff>=0.11.12"]
+dev = [
+    "debugpy>=1.8.14",
+    "fastmcp>=2.7.0",
+    "mcp[cli]>=1.9.3",
+    "pre-commit>=4.2.0",
+    "ruff>=0.11.12",
+]
 testing = [
     "coverage[toml]>=7.8.2",
     "pytest>=8.4.0",
