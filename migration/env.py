@@ -108,8 +108,72 @@ def run_migrations_offline() -> None:
         context.run_migrations()
 
 
+def include_object(object, name, type_, reflected, compare_to):
+    """
+    Filter objects to include in autogenerate.
+
+    This prevents Alembic from dropping PostGIS-related tables and other
+    system tables that exist in the database but aren't part of our models.
+    """
+    if type_ == "table" and reflected and compare_to is None:
+        # Skip PostGIS system tables
+        postgis_tables = {
+            "spatial_ref_sys",
+            "geometry_columns",
+            "geography_columns",
+            "raster_columns",
+            "raster_overviews",
+            # TIGER geocoding tables
+            "addr",
+            "addrfeat",
+            "bg",
+            "county",
+            "county_lookup",
+            "countysub_lookup",
+            "cousub",
+            "direction_lookup",
+            "edges",
+            "faces",
+            "featnames",
+            "geocode_settings",
+            "geocode_settings_default",
+            "layer",
+            "loader_lookuptables",
+            "loader_platform",
+            "loader_variables",
+            "pagc_gaz",
+            "pagc_lex",
+            "pagc_rules",
+            "place",
+            "place_lookup",
+            "secondary_unit_lookup",
+            "state",
+            "state_lookup",
+            "street_type_lookup",
+            "tabblock",
+            "tabblock20",
+            "topology",
+            "tract",
+            "zip_lookup",
+            "zip_lookup_all",
+            "zip_lookup_base",
+            "zip_state",
+            "zip_state_loc",
+            "zcta5",
+        }
+
+        if name in postgis_tables:
+            return False
+
+    return True
+
+
 def do_run_migrations(connection):
-    context.configure(connection=connection, target_metadata=target_metadata)
+    context.configure(
+        connection=connection,
+        target_metadata=target_metadata,
+        include_object=include_object,
+    )
 
     with context.begin_transaction():
         context.run_migrations()
