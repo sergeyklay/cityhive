@@ -2,6 +2,7 @@ import uuid
 from datetime import datetime
 
 import sqlalchemy as sa
+from geoalchemy2 import Geography
 from sqlalchemy import orm as so
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -77,3 +78,37 @@ class User(Base, IdentityMixin):
         index=True,
         server_default=func.now(),
     )
+
+    hives: so.Mapped[list["Hive"]] = so.relationship(back_populates="user")
+
+
+class Hive(Base, IdentityMixin):
+    """Hive model."""
+
+    __tablename__ = "hives"
+
+    user_id: so.Mapped[int] = so.mapped_column(
+        sa.ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    name: so.Mapped[str] = so.mapped_column(
+        sa.Text,
+        nullable=False,
+    )
+    location: so.Mapped[Geography | None] = so.mapped_column(
+        Geography(geometry_type="POINT", srid=4326),
+        nullable=True,
+    )
+    frame_type: so.Mapped[str] = so.mapped_column(
+        sa.Text,
+        nullable=True,
+    )
+    installed_at: so.Mapped[datetime] = so.mapped_column(
+        sa.DateTime(timezone=True),
+        nullable=False,
+        index=True,
+        server_default=func.now(),
+    )
+
+    user: so.Mapped["User"] = so.relationship(back_populates="hives")
