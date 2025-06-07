@@ -1,0 +1,61 @@
+---
+description: Describes the high-level project structure and its services
+globs: **/*.py
+alwaysApply: true
+---
+# Project Structure & Service Responsibilities
+
+--
+
+## Git Repository Overview
+
+- **Type:** Python project.
+- **Language/Version:** Python 3.12 (see [pyproject.toml](mdc:pyproject.toml))
+- **Dependency Management:** uv (see [pyproject.toml](mdc:pyproject.toml), `[tool.uv]` section)
+- **Linting/Formatting:** Ruff (see [pyproject.toml](mdc:pyproject.toml))
+- **Testing:** Pytest (see [pyproject.toml](mdc:pyproject.toml)), coverage via `coverage`.
+- **CI/CD:** Workflows in [.github/workflows/](mdc:.github/workflows)
+- **Containerization:** Dockerfile with orchestration via [docker-compose.yml](mdc:docker-compose.yml)
+
+## Data & Storage
+
+- **Database:** This project uses PostgreSQL + PostGIS database (see [docker-compose.yml](mdc:docker-compose.yml)).
+
+## Dependency Management
+
+- ONLY use `uv`, NEVER `pip`
+- Installation: `uv add package`
+- Running tools: `uv run tool`
+- Upgrading: `uv add --dev package --upgrade-package package`
+- FORBIDDEN: `uv pip install`, `@latest` syntax
+
+
+## Linting
+
+- Ruff is the linter and formatter for all Python code in this project.
+- Configuration is in the root [pyproject.toml](mdc:pyproject.toml) under `[tool.ruff]` and `[tool.ruff.lint]`.
+- Target Python version: 3.12 (py312).
+- Linting rules enabled:
+  - I: All imports
+  - E: All errors
+  - W: All warnings
+  - F: All false positives
+  - C: All complexity
+  - Q: All quality
+  - UP006: Enforcing the use of PEP 585 syntax
+  - UP007: Enforcing the use of PEP 604 syntax
+  - RET505: Unnecessary `else` after `return` statement
+  - B006: Do not use mutable data structures for argument defaults
+  - B904: Use `raise ... from err` instead of `raise ...`
+  - B905: Specify `strict` when using `zip()`
+  - G004: Don't use f-strings for string interpolation in logging
+- Import sorting: First-party modules is `cityhive`.
+- Ignore rule: E402 (module level import not at top of file).
+- Use `ruff check` (and `ruff check --fix` with autofix) for linting and `ruff format` for formatting.
+
+---
+
+**See also:**
+- [pyproject.toml](mdc:pyproject.toml)
+- [docker-compose.yml](mdc:docker-compose.yml)
+- [README.md](mdc:README.md)
