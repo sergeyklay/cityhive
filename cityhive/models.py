@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 
 import sqlalchemy as sa
 from geoalchemy2 import Geography
@@ -112,6 +112,7 @@ class Hive(Base):
 
     user: so.Mapped["User"] = so.relationship(back_populates="hives")
     sensors: so.Mapped[list["Sensor"]] = so.relationship(back_populates="hive")
+    inspections: so.Mapped[list["Inspection"]] = so.relationship(back_populates="hive")
 
     def __repr__(self):
         """Returns the object representation in string format."""
@@ -184,3 +185,39 @@ class SensorReading(Base):
     def __repr__(self):
         """Returns the object representation in string format."""
         return f"<SensorReading id={self.id!r}>"
+
+
+class Inspection(Base):
+    """Inspection model."""
+
+    __tablename__ = "inspections"
+
+    id: so.Mapped[int] = so.mapped_column(
+        primary_key=True,
+        autoincrement=True,
+    )
+    hive_id: so.Mapped[int] = so.mapped_column(
+        sa.ForeignKey("hives.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    scheduled_for: so.Mapped[date] = so.mapped_column(
+        sa.Date,
+        nullable=False,
+    )
+    notes: so.Mapped[str | None] = so.mapped_column(
+        sa.Text,
+        nullable=True,
+    )
+    created_at: so.Mapped[datetime] = so.mapped_column(
+        sa.DateTime(timezone=True),
+        nullable=False,
+        index=True,
+        server_default=func.now(),
+    )
+
+    hive: so.Mapped["Hive"] = so.relationship(back_populates="inspections")
+
+    def __repr__(self):
+        """Returns the object representation in string format."""
+        return f"<Inspection id={self.id!r}>"
