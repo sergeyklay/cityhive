@@ -89,12 +89,34 @@ class HiveService:
                     error_message="User not found",
                 )
 
-            # Create location geometry if coordinates provided
+            # Validate coordinate completeness - both or neither must be provided
+            lat_provided = creation_data.latitude is not None
+            lng_provided = creation_data.longitude is not None
+
+            if lat_provided != lng_provided:
+                # Exactly one coordinate provided - this is invalid
+                missing_coord = "longitude" if lat_provided else "latitude"
+                logger.warning(
+                    (
+                        "Partial coordinates provided - both latitude and longitude "
+                        "required"
+                    ),
+                    latitude=creation_data.latitude,
+                    longitude=creation_data.longitude,
+                    missing=missing_coord,
+                )
+                return HiveCreationResult(
+                    success=False,
+                    error_type=HiveCreationErrorType.INVALID_LOCATION,
+                    error_message=(
+                        "Both latitude and longitude must be provided together. "
+                        f"Missing: {missing_coord}"
+                    ),
+                )
+
+            # Create location geometry if both coordinates provided
             location = None
-            if (
-                creation_data.latitude is not None
-                and creation_data.longitude is not None
-            ):
+            if lat_provided and lng_provided:
                 try:
                     # Create PostGIS POINT geometry from coordinates
                     # SRID 4326 is WGS84 (GPS coordinates)

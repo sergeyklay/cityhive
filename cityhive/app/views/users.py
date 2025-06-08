@@ -31,6 +31,48 @@ from cityhive.infrastructure.typedefs import db_key
 logger = get_logger(__name__)
 
 
+def _validate_user_data(
+    data: dict,
+) -> tuple[UserRegistrationData | None, web.Response | None]:
+    """
+    Validate and parse user registration data.
+
+    Returns:
+        Tuple of (UserRegistrationData, None) on success
+        or (None, error_response) on failure
+    """
+    # Sanitize input fields
+    name = sanitize_string_field(data.get("name"))
+    email = sanitize_email_field(data.get("email"))
+
+    # Validate required fields
+    name_validation = validate_required_field(name, "Name")
+    if not name_validation.is_valid:
+        return None, create_error_response(
+            name_validation.error_message or "Name validation failed", 400
+        )
+
+    email_validation = validate_required_field(email, "Email")
+    if not email_validation.is_valid:
+        return None, create_error_response(
+            email_validation.error_message or "Email validation failed", 400
+        )
+
+    # Validate email format
+    email_format_validation = validate_email(email)
+    if not email_format_validation.is_valid:
+        return None, create_error_response(
+            email_format_validation.error_message or "Email format invalid", 400
+        )
+
+    # Get normalized email for storage consistency
+    normalized_email = get_normalized_email(email)
+    if normalized_email is None:
+        return None, create_error_response("Invalid email format", 400)
+
+    return UserRegistrationData(name=name, email=normalized_email), None
+
+
 async def create_user(request: web.Request) -> web.Response:
     """
     Register a new user.
@@ -54,39 +96,17 @@ async def create_user(request: web.Request) -> web.Response:
             return create_error_response(parse_error, 400)
 
         # Ensure data is not None after successful parsing
-        assert data is not None
+        if data is None:
+            return create_error_response("Invalid JSON data", 400)
 
-        # Sanitize input fields
-        name = sanitize_string_field(data.get("name"))
-        email = sanitize_email_field(data.get("email"))
+        # Validate and parse user data
+        registration_data, validation_error = _validate_user_data(data)
+        if validation_error:
+            return validation_error
 
-        # Validate required fields
-        name_validation = validate_required_field(name, "Name")
-        if not name_validation.is_valid:
-            return create_error_response(
-                name_validation.error_message or "Name validation failed", 400
-            )
-
-        email_validation = validate_required_field(email, "Email")
-        if not email_validation.is_valid:
-            return create_error_response(
-                email_validation.error_message or "Email validation failed", 400
-            )
-
-        # Validate email format
-        email_format_validation = validate_email(email)
-        if not email_format_validation.is_valid:
-            return create_error_response(
-                email_format_validation.error_message or "Email format invalid", 400
-            )
-
-        # Get normalized email for storage consistency
-        normalized_email = get_normalized_email(email)
-        if normalized_email is None:
-            return create_error_response("Invalid email format", 400)
-
-        # Create registration data with normalized email
-        registration_data = UserRegistrationData(name=name, email=normalized_email)
+        # Ensure registration_data is not None (defensive programming)
+        if registration_data is None:
+            return create_error_response("Failed to process user data", 500)
 
         # Register user through domain service
         async with request.app[db_key]() as session:
@@ -127,7 +147,7 @@ async def create_user(request: web.Request) -> web.Response:
 
             logger.warning(
                 "User registration failed",
-                email=email,
+                email=registration_data.email,
                 error_type=result.error_type.value if result.error_type else None,
                 error=result.error_message,
             )

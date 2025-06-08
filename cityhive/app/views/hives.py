@@ -101,6 +101,33 @@ def _validate_and_parse_hive_data(
     return creation_data, None
 
 
+def _handle_hive_creation_error(result, creation_data) -> web.Response:
+    """Handle hive creation error and return appropriate response."""
+    # Determine appropriate HTTP status code based on structured error type
+    status_code = 400  # Default to client error
+    if result.error_type == HiveCreationErrorType.USER_NOT_FOUND:
+        status_code = 404
+    elif result.error_type == HiveCreationErrorType.INTEGRITY_VIOLATION:
+        status_code = 409  # Conflict - client caused integrity violation
+    elif result.error_type in (
+        HiveCreationErrorType.DATABASE_ERROR,
+        HiveCreationErrorType.UNKNOWN_ERROR,
+    ):
+        status_code = 500
+
+    logger.warning(
+        "Hive creation failed",
+        user_id=creation_data.user_id,
+        name=creation_data.name,
+        error_type=result.error_type.value if result.error_type else None,
+        error=result.error_message,
+    )
+
+    return create_error_response(
+        result.error_message or "Hive creation failed", status_code
+    )
+
+
 async def create_hive(request: web.Request) -> web.Response:
     """
     Create a new hive.
@@ -160,7 +187,9 @@ async def create_hive(request: web.Request) -> web.Response:
                     "user_id": result.hive.user_id,
                     "name": result.hive.name,
                     "frame_type": result.hive.frame_type,
-                    "installed_at": result.hive.installed_at.isoformat(),
+                    "installed_at": result.hive.installed_at.isoformat()
+                    if result.hive.installed_at
+                    else None,
                 }
 
                 # Add location data if available
@@ -178,28 +207,7 @@ async def create_hive(request: web.Request) -> web.Response:
                     status=201,
                 )
 
-            # Determine appropriate HTTP status code based on structured error type
-            status_code = 400  # Default to client error
-            if result.error_type == HiveCreationErrorType.USER_NOT_FOUND:
-                status_code = 404
-            elif result.error_type in (
-                HiveCreationErrorType.DATABASE_ERROR,
-                HiveCreationErrorType.INTEGRITY_VIOLATION,
-                HiveCreationErrorType.UNKNOWN_ERROR,
-            ):
-                status_code = 500
-
-            logger.warning(
-                "Hive creation failed",
-                user_id=creation_data.user_id,
-                name=creation_data.name,
-                error_type=result.error_type.value if result.error_type else None,
-                error=result.error_message,
-            )
-
-            return create_error_response(
-                result.error_message or "Hive creation failed", status_code
-            )
+            return _handle_hive_creation_error(result, creation_data)
 
     except Exception:
         logger.exception("Unexpected error in hive creation API")
