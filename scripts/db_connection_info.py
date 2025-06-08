@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 """Extract database connection details from DATABASE_URI environment variable.
 
 This script parses a PostgreSQL connection URI and extracts host, port, username,
