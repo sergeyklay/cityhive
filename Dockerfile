@@ -72,9 +72,9 @@ RUN chmod +x /app/entrypoint.sh
 # Switch to non-root user
 USER appuser
 
-# Health check using curl to hit the health endpoint
+# Health check using liveness probe endpoint
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
-    CMD curl -f http://localhost:8080/health || exit 1
+    CMD curl -f http://localhost:8080/health/live || exit 1
 
 EXPOSE 8080
 
