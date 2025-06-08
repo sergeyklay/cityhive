@@ -1,0 +1,98 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"git.enableSmartCommit": false,
+		"makefile.configureOnOpen": false,
+		"editor.rulers": [
+			88
+		],
+		"files.autoSave": "onFocusChange",
+		"files.insertFinalNewline": true,
+		"files.trimTrailingWhitespace": true,
+		"files.associations": {
+			".env*": "shellscript"
+		},
+		"python.analysis.typeCheckingMode": "basic",
+		"python.testing.pytestArgs": [
+			"tests"
+		],
+		"python.testing.unittestEnabled": false,
+		"python.testing.pytestEnabled": true,
+		"python.terminal.activateEnvInCurrentTerminal": true,
+		"python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
+		"python.languageServer": "Pylance",
+		"[python]": {
+			"editor.defaultFormatter": "charliermarsh.ruff",
+			"editor.formatOnSave": true,
+			"editor.codeActionsOnSave": {
+				"source.fixAll.ruff": "explicit",
+				"source.organizeImports.ruff": "explicit"
+			}
+		},
+		"[dockerfile]": {
+			"editor.defaultFormatter": "ms-azuretools.vscode-containers",
+			"editor.formatOnSave": true
+		},
+		"[xml]": {
+			"editor.defaultFormatter": "DotJoshJohnson.xml",
+			"editor.formatOnSave": true
+		},
+		"[toml]": {
+			"editor.defaultFormatter": "tamasfe.even-better-toml",
+			"editor.formatOnSave": true
+		},
+		"[json]": {
+			"editor.tabSize": 2,
+			"editor.detectIndentation": false,
+			"editor.insertSpaces": true,
+			"editor.formatOnSave": true
+		},
+		"ruff.interpreter": [
+			"${workspaceFolder}/.venv/bin/python"
+		],
+		"ruff.path": [
+			"${workspaceFolder}/.venv/bin/ruff"
+		]
+	},
+	"extensions": {
+		"recommendations": [
+			// Python Language Support & Development Tools
+			"ms-python.python",                 // Core Python extension
+			"ms-python.vscode-pylance",         // Python language server with rich type information
+			"ms-python.debugpy",                // Python debugger
+			"charliermarsh.ruff",               // Fast Python linter and formatter
+
+			// Database & Data Visualization
+			"ckolkman.vscode-postgres",         // PostgreSQL management and query tools
+			"mechatroner.rainbow-csv",          // CSV/TSV file highlighting and navigation
+
+			// DevOps & Container Tools
+			"ms-azuretools.vscode-containers",  // Docker integration
+			"github.vscode-github-actions",     // GitHub Actions integration
+			"mkhl.direnv",                      // direnv integration for environment variables
+			"elagil.pre-commit-helper",         // Pre-commit hooks integration
+
+			// File Format & Configuration Support
+			"DotJoshJohnson.xml",               // XML tools and formatting
+			"foxundermoon.shell-format",        // Shell script formatting
+			"tamasfe.even-better-toml",         // TOML file support
+			"ms-vscode.makefile-tools",         // Makefile support
+
+			"codezombiech.gitignore",            // Gitignore support
+
+			// Visual Enhancement
+			"PKief.material-icon-theme",        // Material Design file and folder icons
+			"zhuangtongfa.material-theme",      // One Dark theme
+
+			// Organization
+			"Gruntfuggly.todo-tree",            // Tree view for TODO comments
+
+			// AI
+			"coderabbit.coderabbit-vscode",      // CodeRabbit
+		]
+	}
+}
