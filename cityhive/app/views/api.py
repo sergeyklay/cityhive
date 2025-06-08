@@ -5,9 +5,9 @@ These views handle REST API endpoints and return JSON responses.
 All API views should follow REST conventions and proper HTTP status codes.
 """
 
-import logging
+from cityhive.infrastructure.logging import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 # Future API views will be implemented here
 # Example structure:

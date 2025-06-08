@@ -1,13 +1,13 @@
-import logging
 from collections.abc import AsyncGenerator
 
 from aiohttp import web
 from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker, create_async_engine
 
 from cityhive.infrastructure.config import get_config
+from cityhive.infrastructure.logging import get_logger
 from cityhive.infrastructure.typedefs import db_key
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 async def pg_context(app: web.Application) -> AsyncGenerator[None, None]:

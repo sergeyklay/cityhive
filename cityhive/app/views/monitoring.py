@@ -4,15 +4,14 @@ Monitoring views for system health and metrics.
 These views handle health checks and monitoring endpoints.
 """
 
-import logging
-
 from aiohttp import web
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from cityhive.infrastructure.logging import get_logger
 from cityhive.infrastructure.typedefs import db_key
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 async def health_check(request: web.Request) -> web.Response:

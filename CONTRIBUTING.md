@@ -53,7 +53,7 @@ CityHive is intentionally experimental and educational, serving as a comprehensi
 CityHive follows clean architecture principles with strict layer separation:
 
 ```
-cityhive/
+project-directory/
 ├── cityhive/                    # Main application package
 │   ├── app/                     # Web Layer
 │   │   ├── routes/              # Route definitions organized by functionality
@@ -68,21 +68,20 @@ cityhive/
 │   │   ├── middlewares.py       # Request/response middleware
 │   │   └── app.py               # Application factory
 │   ├── domain/                  # Domain Layer
-│   │   ├── models/              # Domain entities and value objects
+│   │   ├── models.py            # Domain entities and value objects
 │   │   ├── services/            # Business logic and use cases
 │   │   └── interfaces/          # Abstract interfaces and protocols
 │   ├── infrastructure/          # Infrastructure Layer
-│   │   ├── database/            # Database models and repositories
-│   │   ├── config/              # Configuration management
-│   │   └── external/            # External service integrations
+│   │   ├── db.py                # Database management and repositories
+│   │   ├── config.py            # Configuration management
+│   │   └── logging.py           # Structured logging infrastructure
 │   ├── static/                  # Static assets (CSS, JS, images)
 │   └── templates/               # Jinja2 HTML templates
 ├── tests/                       # Test suites
 │   ├── unit/                    # Unit tests (fast, isolated)
 │   └── integration/             # Integration tests (realistic scenarios)
 ├── migration/                   # Alembic database migrations
-├── scripts/                     # Utility and maintenance scripts
-└── .cursor/                     # AI integration configuration
+└── scripts/                     # Utility and maintenance scripts
 ```
 
 **Layer Dependencies** (following clean architecture):
@@ -390,25 +389,53 @@ async def backup_beehive_data(hive_id: int) -> None:
 
 #### Logging Guidelines
 
-Use proper logging patterns without f-strings:
+Use structlog for structured, machine-readable logging:
 
 ```python
-import logging
+from cityhive.infrastructure.logging import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
-# ✅ DO: Parameterized logging with structured data
-logger.info("Processing beehive inspection", extra={
-    "beehive_id": hive_id,
-    "inspector_id": inspector_id,
-    "inspection_type": inspection_type,
-})
+# ✅ DO: Structured logging with key-value pairs
+logger.info(
+    "Processing beehive inspection",
+    beehive_id=hive_id,
+    inspector_id=inspector_id,
+    inspection_type=inspection_type,
+)
 
-logger.error("Failed to process sensor data for hive %s", hive_id, exc_info=True)
+logger.error(
+    "Failed to process sensor data",
+    beehive_id=hive_id,
+    error_type="timeout",
+    retry_count=3,
+)
 
-# ❌ DON'T: f-strings in logging (bypasses lazy evaluation)
-logger.info(f"Processing beehive {hive_id} inspection")
-logger.error(f"Failed to process sensor data for hive {hive_id}")
+# ✅ DO: Context binding for related operations
+inspection_logger = logger.bind(
+    beehive_id=hive_id,
+    inspector_id=inspector_id,
+    inspection_date=inspection_date.isoformat(),
+)
+
+inspection_logger.info("Inspection started")
+inspection_logger.info("Health score calculated", score=0.89)
+inspection_logger.info("Inspection completed", status="success")
+
+# ✅ DO: Exception logging with structured context
+try:
+    process_sensor_data(sensor_id)
+except SensorError as e:
+    logger.exception(
+        "Sensor processing failed",
+        sensor_id=sensor_id,
+        error_type=type(e).__name__,
+        error_code=getattr(e, 'code', None),
+    )
+
+# ❌ DON'T: String formatting or f-strings in logging
+logger.info(f"Processing beehive {hive_id} inspection")  # Bypasses structured logging
+logger.error("Failed to process sensor data for hive %s", hive_id)  # Old format
 ```
 
 #### Import Organization
@@ -419,7 +446,6 @@ Organize imports in clear groups:
 # Standard library imports
 import asyncio
 import json
-import logging
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -433,6 +459,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from cityhive.domain.models.beehive import BeehiveModel
 from cityhive.domain.services.inspection import InspectionService
 from cityhive.infrastructure.database.session import get_session
+from cityhive.infrastructure.logging import get_logger
+
+# Initialize structured logger
+logger = get_logger(__name__)
 ```
 
 ### Testing Guidelines
@@ -675,22 +705,28 @@ async def get_database_session() -> AsyncGenerator[AsyncSession, None]:
    - Proper resource management with async context managers
    - Type-safe dependency injection with aiohttp AppKeys
 
-2. **AI-Assisted Development**
+2. **Structured Logging with structlog**
+   - JSON-only output to stdout for 12-factor app compliance
+   - Request-scoped context using contextvars for distributed tracing
+   - Machine-readable logs with structured key-value pairs
+   - Integration with modern observability platforms
+
+3. **AI-Assisted Development**
    - Cursor AI integration with custom development rules
    - MCP (Model Context Protocol) for direct database querying
    - AI-powered code suggestions and architectural guidance
 
-3. **Developer Experience Optimization**
+4. **Developer Experience Optimization**
    - Ultra-fast dependency management with uv
    - Lightning-fast linting and formatting with ruff
    - Comprehensive pre-commit hooks and quality gates
 
-4. **Clean Architecture in Python**
+5. **Clean Architecture in Python**
    - Strict layer separation with dependency inversion
    - Domain-driven design with rich business models
    - Hexagonal architecture patterns for external integrations
 
-5. **DevOps Automation**
+6. **DevOps Automation**
    - GitHub Actions with intelligent concurrency control
    - Automated dependency updates via Dependabot
    - Comprehensive CI/CD pipeline with quality gates
@@ -865,11 +901,13 @@ uv run pytest --pdb tests/unit/domain/test_beehive.py::test_specific_function
 - **Architecture**: Study clean architecture layer separation
 - **Patterns**: Look for dependency injection and async patterns
 - **Testing**: Examine test structure for testing strategies
+- **Logging**: Review structured logging patterns in `cityhive/infrastructure/logging.py`
 
 ### External Documentation
 
 - **[aiohttp Documentation](https://docs.aiohttp.org/)**: Web framework patterns
 - **[SQLAlchemy Async](https://docs.sqlalchemy.org/en/20/orm/extensions/asyncio.html)**: Database ORM
+- **[structlog Documentation](https://www.structlog.org/)**: Structured logging patterns and best practices
 - **[Clean Architecture](https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html)**: Architectural principles
 - **[Python Type Hints](https://docs.python.org/3/library/typing.html)**: Modern typing practices
 - **[FastAPI](https://fastapi.tiangolo.com/)**: Similar async patterns and practices

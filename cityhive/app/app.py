@@ -1,5 +1,3 @@
-import logging
-
 import aiohttp_jinja2
 import jinja2
 from aiohttp import web
@@ -8,6 +6,7 @@ from cityhive.app.middlewares import setup_middlewares
 from cityhive.app.routes import setup_routes, setup_static_routes
 from cityhive.infrastructure.config import Config, get_config
 from cityhive.infrastructure.db import pg_context
+from cityhive.infrastructure.logging import get_logger, setup_logging
 from cityhive.infrastructure.typedefs import config_key
 
 
@@ -49,11 +48,14 @@ async def create_app(config: Config | None = None) -> web.Application:
 
 def main() -> None:
     """Main entry point for the application."""
-    logging.basicConfig(
-        level=logging.DEBUG,
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    )
+    setup_logging(force_json=True)
+
+    logger = get_logger(__name__)
+    logger.info("Starting CityHive application")
 
     config = get_config()
+    logger.info(
+        "Configuration loaded", app_host=config.app_host, app_port=config.app_port
+    )
 
     web.run_app(create_app(config), host=config.app_host, port=config.app_port)
