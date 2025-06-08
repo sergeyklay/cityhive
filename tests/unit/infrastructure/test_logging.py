@@ -437,7 +437,7 @@ def test_configure_third_party_loggers_sets_correct_level_and_structlog_handler(
 ):
     test_logger_name = f"test_cityhive_logger_{level}"
 
-    configure_third_party_loggers(test_logger_name, level=level)
+    configure_third_party_loggers(test_logger_name, default_level=level)
 
     test_logger = logging.getLogger(test_logger_name)
     assert test_logger.level == expected_level
@@ -449,7 +449,7 @@ def test_configure_third_party_loggers_sets_correct_level_and_structlog_handler(
 def test_configure_third_party_loggers_configures_multiple_loggers_correctly():
     logger_names = ["test_logger_1", "test_logger_2", "test_logger_3"]
 
-    configure_third_party_loggers(*logger_names, level=logging.WARNING)
+    configure_third_party_loggers(*logger_names, default_level=logging.WARNING)
 
     for logger_name in logger_names:
         test_logger = logging.getLogger(logger_name)
@@ -556,3 +556,48 @@ def test_structlog_handler_emit_handles_exc_info_with_different_log_levels(mocke
         lineno=123,
         exc_info=exc_info,
     )
+
+
+def test_configure_third_party_loggers_with_tuple_configurations():
+    test_logger_1 = "test_tuple_logger_1"
+    test_logger_2 = "test_tuple_logger_2"
+
+    configure_third_party_loggers(
+        (test_logger_1, logging.DEBUG),
+        (test_logger_2, logging.ERROR),
+    )
+
+    logger_1 = logging.getLogger(test_logger_1)
+    logger_2 = logging.getLogger(test_logger_2)
+
+    assert logger_1.level == logging.DEBUG
+    assert logger_2.level == logging.ERROR
+    assert logger_1.propagate is False
+    assert logger_2.propagate is False
+    assert len(logger_1.handlers) == 1
+    assert len(logger_2.handlers) == 1
+    assert isinstance(logger_1.handlers[0], StructlogHandler)
+    assert isinstance(logger_2.handlers[0], StructlogHandler)
+
+
+def test_configure_third_party_loggers_with_mixed_string_and_tuple_configurations():
+    test_logger_1 = "test_mixed_logger_1"
+    test_logger_2 = "test_mixed_logger_2"
+
+    configure_third_party_loggers(
+        test_logger_1,
+        (test_logger_2, logging.ERROR),
+        default_level=logging.INFO,
+    )
+
+    logger_1 = logging.getLogger(test_logger_1)
+    logger_2 = logging.getLogger(test_logger_2)
+
+    assert logger_1.level == logging.INFO
+    assert logger_2.level == logging.ERROR
+    assert logger_1.propagate is False
+    assert logger_2.propagate is False
+    assert len(logger_1.handlers) == 1
+    assert len(logger_2.handlers) == 1
+    assert isinstance(logger_1.handlers[0], StructlogHandler)
+    assert isinstance(logger_2.handlers[0], StructlogHandler)

@@ -213,19 +213,29 @@ class StructlogHandler(logging.Handler):
 
 
 def configure_third_party_loggers(
-    *logger_names: str, level: int = logging.INFO
+    *logger_configs: str | tuple[str, int], default_level: int = logging.INFO
 ) -> None:
     """
     Configure third-party loggers to use structured logging.
 
     Args:
-        *logger_names: Names of loggers to configure
-            (e.g., 'alembic', 'sqlalchemy.engine')
-        level: Log level to set for these loggers
+        *logger_configs: Logger names or tuples of (logger_name, level).
+            Examples:
+            - configure_third_party_loggers("alembic", "sqlalchemy.engine")
+            - configure_third_party_loggers(
+                ("alembic", logging.INFO),
+                ("sqlalchemy.engine", logging.WARNING)
+              )
+        default_level: Default log level for loggers specified as strings only
     """
     handler = StructlogHandler("third_party")
 
-    for logger_name in logger_names:
+    for config in logger_configs:
+        if isinstance(config, tuple):
+            logger_name, level = config
+        else:
+            logger_name, level = config, default_level
+
         logger = logging.getLogger(logger_name)
         logger.handlers.clear()
         logger.addHandler(handler)

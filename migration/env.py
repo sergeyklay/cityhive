@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import os
 from pathlib import Path
 from urllib.parse import urlparse, urlunparse
@@ -30,7 +31,13 @@ setup_logging(force_json=True)
 logger = get_logger("migration.env")
 
 # Configure third-party loggers to use our structured logging system
-configure_third_party_loggers("alembic", "sqlalchemy.engine")
+# Following standard Alembic configuration:
+# - alembic at INFO
+# - sqlalchemy.engine at WARNING
+configure_third_party_loggers(
+    ("alembic", logging.INFO),
+    ("sqlalchemy.engine", logging.WARNING),
+)
 
 # Allow DATABASE_URI override via environment variable, this allows running
 # migrations with a override for the database URI:
