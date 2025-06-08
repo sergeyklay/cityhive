@@ -1,40 +1,87 @@
 """
 Monitoring views for system health and metrics.
 
-These views handle health checks and monitoring endpoints.
+These views handle health checks and monitoring endpoints using the centralized
+health check service from the domain layer.
 """
 
-from aiohttp import web
-from sqlalchemy import text
-from sqlalchemy.ext.asyncio import AsyncSession
+from typing import Any
 
+from aiohttp import web
+
+from cityhive.domain.services.health import HealthCheckService
 from cityhive.infrastructure.logging import get_logger
 from cityhive.infrastructure.typedefs import db_key
 
 logger = get_logger(__name__)
 
 
-async def health_check(request: web.Request) -> web.Response:
+async def liveness_check(request: web.Request) -> web.Response:
     """
-    Health check endpoint for monitoring and load balancers.
+    Liveness probe endpoint.
 
-    Returns a simple JSON response indicating service status.
+    Fast check to verify the application is running and responsive.
+    Used by orchestration systems to know when to restart the container.
     """
-    try:
-        # Test database connectivity
-        async with request.app[db_key]() as session:
-            session: AsyncSession
-            # Simple query to test database
-            await session.execute(text("SELECT 1"))
+    health_service = HealthCheckService()
+    health = await health_service.check_liveness()
 
-        return web.json_response({"status": "healthy", "service": "cityhive"})
-    except Exception:
-        logger.exception("Health check failed")
-        return web.json_response(
+    response_data: dict[str, Any] = {
+        "status": health.status.value,
+        "service": health.service,
+        "timestamp": health.timestamp.isoformat(),
+    }
+
+    if health.version:
+        response_data["version"] = health.version
+
+    logger.info("Liveness check completed", status=health.status.value)
+
+    return web.json_response(
+        response_data,
+        status=200 if health.is_healthy else 503,
+    )
+
+
+async def readiness_check(request: web.Request) -> web.Response:
+    """
+    Readiness probe endpoint.
+
+    Comprehensive check including all dependencies (database, etc.).
+    Used by load balancers to know when the service can accept traffic.
+    """
+    health_service = HealthCheckService()
+    health = await health_service.check_readiness(request.app[db_key])
+
+    response_data: dict[str, Any] = {
+        "status": health.status.value,
+        "service": health.service,
+        "timestamp": health.timestamp.isoformat(),
+    }
+
+    if health.version:
+        response_data["version"] = health.version
+
+    if health.components:
+        components_data = [
             {
-                "status": "unhealthy",
-                "service": "cityhive",
-                "error": "Database connection failed",
-            },
-            status=503,
-        )
+                "name": component.name,
+                "status": component.status.value,
+                "message": component.message,
+                "response_time_ms": component.response_time_ms,
+                **(component.metadata or {}),
+            }
+            for component in health.components
+        ]
+        response_data["components"] = components_data
+
+    logger.info(
+        "Readiness check completed",
+        status=health.status.value,
+        component_count=len(health.components) if health.components else 0,
+    )
+
+    return web.json_response(
+        response_data,
+        status=200 if health.is_healthy else 503,
+    )
