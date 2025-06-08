@@ -1,6 +1,7 @@
 # CityHive
 
 [![codecov](https://codecov.io/gh/sergeyklay/cityhive/graph/badge.svg?token=aXIi7iNGl3)](https://codecov.io/gh/sergeyklay/cityhive)
+[![CI](https://github.com/sergeyklay/cityhive/actions/workflows/ci.yml/badge.svg)](https://github.com/sergeyklay/cityhive/actions/workflows/ci.yml)
 
 **An experimental aiohttp microservice for urban beehive management and technology exploration.**
 
