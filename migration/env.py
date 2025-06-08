@@ -1,6 +1,5 @@
 import asyncio
 import os
-from logging.config import fileConfig
 from pathlib import Path
 from urllib.parse import urlparse, urlunparse
 
@@ -8,6 +7,13 @@ from alembic import context
 from dotenv import load_dotenv
 from sqlalchemy import pool
 from sqlalchemy.ext.asyncio import async_engine_from_config
+
+# Setup structured logging for Alembic
+from cityhive.infrastructure.logging import (
+    configure_third_party_loggers,
+    get_logger,
+    setup_logging,
+)
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -19,11 +25,12 @@ dotenv_path = project_root / ".env"
 if dotenv_path.exists():
     load_dotenv(dotenv_path=dotenv_path)
 
+# Setup structured logging with JSON output for consistent logging
+setup_logging(force_json=True)
+logger = get_logger("migration.env")
 
-# Interpret the config file for Python logging.
-# This line sets up loggers basically.
-if config.config_file_name is not None:
-    fileConfig(config.config_file_name)
+# Configure third-party loggers to use our structured logging system
+configure_third_party_loggers("alembic", "sqlalchemy.engine")
 
 # Allow DATABASE_URI override via environment variable, this allows running
 # migrations with a override for the database URI:
@@ -110,6 +117,8 @@ def run_migrations_offline() -> None:
 
     """
     url = config.get_main_option("sqlalchemy.url")
+    logger.info("Starting offline migrations", mode="offline", database_url=url)
+
     context.configure(
         url=url,
         target_metadata=target_metadata,
@@ -119,6 +128,8 @@ def run_migrations_offline() -> None:
 
     with context.begin_transaction():
         context.run_migrations()
+
+    logger.info("Offline migrations completed", mode="offline")
 
 
 def include_object(object, name, type_, reflected, compare_to):
@@ -182,6 +193,8 @@ def include_object(object, name, type_, reflected, compare_to):
 
 
 def do_run_migrations(connection):
+    logger.info("Configuring migration context", mode="online")
+
     context.configure(
         connection=connection,
         target_metadata=target_metadata,
@@ -189,7 +202,9 @@ def do_run_migrations(connection):
     )
 
     with context.begin_transaction():
+        logger.info("Running migrations", mode="online")
         context.run_migrations()
+        logger.info("Migrations completed successfully", mode="online")
 
 
 async def run_async_migrations():
@@ -197,6 +212,8 @@ async def run_async_migrations():
     and associate a connection with the context.
 
     """
+    logger.info("Starting async migrations", mode="online")
+
     connectable = async_engine_from_config(
         config.get_section(ini_section, {}),
         prefix="sqlalchemy.",
@@ -204,9 +221,11 @@ async def run_async_migrations():
     )
 
     async with connectable.connect() as connection:
+        logger.info("Database connection established", mode="online")
         await connection.run_sync(do_run_migrations)
 
     await connectable.dispose()
+    logger.info("Database connection disposed", mode="online")
 
 
 def run_migrations_online():
