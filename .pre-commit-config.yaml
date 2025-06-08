@@ -1,0 +1,47 @@
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-added-large-files
+
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v4.0.0-alpha.8
+    hooks:
+      - id: prettier
+        name: Prettier
+        types_or: [yaml, json5]
+
+  - repo: local
+    hooks:
+      - id: ruff-format
+        name: Ruff Format
+        entry: uv run ruff format
+        args: ["--target-version", "py312"]
+        types: [python]
+        language: system
+        pass_filenames: false
+      - id: ruff
+        name: Ruff Lint
+        entry: uv run ruff check
+        args: ["--target-version", "py312", "--fix", "--exit-non-zero-on-fix"]
+        types: [python]
+        language: system
+        pass_filenames: false
+      - id: uv-lock-check
+        name: Check uv.lock is up to date
+        entry: uv lock --check
+        language: system
+        files: '^(.*pyproject\.toml|uv\.lock)$'
+        pass_filenames: false
+      - id: no-init-logic
+        name: Disallow logic in __init__.py
+        entry: uv run python scripts/check_no_classes_in_init.py
+        language: system
+        types: [python]
+        files: ^(.*/)?__init__.py$
+        pass_filenames: true

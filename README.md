@@ -63,6 +63,9 @@ This project is intentionally experimental—not because it uses unconventional 
 cityhive/
 ├── cityhive/                 # Main application package
 │   ├── app/                  # Web layer (aiohttp routes, middleware, views)
+│   │   ├── routes/           # Route definitions organized by functionality
+│   │   ├── views/            # View handlers organized by functionality
+│   │   └── middlewares.py    # Request/response middleware
 │   ├── domain/               # Business logic and domain models
 │   ├── infrastructure/       # External integrations and database
 │   ├── static/               # Static assets

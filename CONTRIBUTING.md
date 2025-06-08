@@ -56,10 +56,17 @@ CityHive follows clean architecture principles with strict layer separation:
 cityhive/
 ├── cityhive/                    # Main application package
 │   ├── app/                     # Web Layer
-│   │   ├── routes/              # HTTP routes and handlers
-│   │   ├── middleware/          # Request/response middleware
-│   │   ├── views/               # Template rendering and responses
-│   │   └── main.py              # Application factory
+│   │   ├── routes/              # Route definitions organized by functionality
+│   │   │   ├── web.py           # Web interface routes (HTML)
+│   │   │   ├── api.py           # REST API routes (JSON)
+│   │   │   ├── monitoring.py    # Health and monitoring routes
+│   │   │   └── main.py          # Route setup and configuration
+│   │   ├── views/               # View handlers organized by functionality
+│   │   │   ├── web.py           # Web interface views
+│   │   │   ├── api.py           # API endpoint views
+│   │   │   └── monitoring.py    # Health check views
+│   │   ├── middlewares.py       # Request/response middleware
+│   │   └── app.py               # Application factory
 │   ├── domain/                  # Domain Layer
 │   │   ├── models/              # Domain entities and value objects
 │   │   ├── services/            # Business logic and use cases
@@ -526,26 +533,23 @@ make test ccov
 #### Layer Responsibilities
 
 **Web Layer (`app/`)**:
-- HTTP request/response handling
-- Input validation and serialization
-- Template rendering
-- Middleware and routing
+- **Routes (`app/routes/`)**: HTTP route definitions organized by functionality
+- **Views (`app/views/`)**: Request handlers and business logic orchestration
+- **Middleware (`app/middlewares.py`)**: Request/response processing
+- Template rendering and input validation
 
 ```python
-# app/routes/beehive.py
-async def create_beehive_handler(request: web.Request) -> web.Response:
+# app/routes/web.py
+@web_routes.get("/beehives/create", name="beehive_create")
+async def create_beehive_route(request: web.Request) -> web.StreamResponse:
     """Handle beehive creation requests."""
     try:
         # Extract and validate input
         data = await request.json()
         create_data = BeehiveCreateModel.model_validate(data)
 
-        # Delegate to domain service
-        service = request.app[BeehiveServiceKey]
-        beehive = await service.create_beehive(create_data)
-
-        # Return response
-        return web.json_response(beehive.model_dump())
+        # Delegate to view handler
+        return await create_beehive_view(request, create_data)
     except ValidationError as e:
         return web.json_response({"errors": e.errors()}, status=400)
 ```
@@ -607,7 +611,7 @@ class SQLAlchemyBeehiveRepository(BeehiveRepository):
 #### Application Factory Pattern
 
 ```python
-# app/main.py
+# app/app.py
 async def create_app() -> web.Application:
     """Create and configure the aiohttp application."""
     app = web.Application(
@@ -623,9 +627,10 @@ async def create_app() -> web.Application:
         repository=SQLAlchemyBeehiveRepository()
     )
 
-    # Add routes
-    app.router.add_routes(beehive_routes)
-    app.router.add_routes(inspection_routes)
+    # Setup routes
+    from cityhive.app.routes import setup_routes, setup_static_routes
+    setup_routes(app)
+    setup_static_routes(app)
 
     return app
 ```
@@ -705,16 +710,10 @@ We welcome contributions exploring:
 
 ### Before Submitting
 
-1. **✅ Run quality checks**:
-   ```bash
-   make format lint test
-   ```
-
-2. **✅ Verify test coverage**: Ensure new code has appropriate test coverage
-
-3. **✅ Update documentation**: Include docstrings and update relevant docs
-
-4. **✅ Check pre-commit hooks**: Ensure all automated checks pass
+1. **Run quality checks**: `make format lint test`
+2. **Verify test coverage**: Ensure new code has appropriate test coverage
+3. **Update documentation**: Include docstrings and update relevant docs
+4. **Check pre-commit hooks**: Ensure all automated checks pass
 
 ### PR Guidelines
 
@@ -862,7 +861,7 @@ uv run pytest --pdb tests/unit/domain/test_beehive.py::test_specific_function
 
 ### Learning the Codebase
 
-- **Start with**: `cityhive/app/main.py` for application entry point
+- **Start with**: `cityhive/app/app.py` for application entry point
 - **Architecture**: Study clean architecture layer separation
 - **Patterns**: Look for dependency injection and async patterns
 - **Testing**: Examine test structure for testing strategies
@@ -878,15 +877,9 @@ uv run pytest --pdb tests/unit/domain/test_beehive.py::test_specific_function
 
 ### Community Resources
 
-- **GitHub Discussions**: Questions and general discussion
-- **GitHub Issues**: Bug reports and feature requests
-- **Code Examples**: In-depth examples in test files
-- **AI Assistant**: Use Cursor AI for contextual help
+- [GitHub Discussions](https://github.com/sergeyklay/cityhive/discussions): Questions and general discussion
+- [GitHub Issues](https://github.com/sergeyklay/cityhive/issues): Bug reports and feature requests
 
 ---
 
 **Happy Contributing!**
-
-Remember: CityHive is a learning environment where experimentation is encouraged. Don't hesitate to try new approaches, ask questions, or propose innovative ideas. Every contribution helps make this a better resource for the entire Python community.
-
-**Key Principle**: Focus on learning, experimenting, and demonstrating modern Python web development practices. Your contributions should be educational, well-tested, and showcase interesting patterns or techniques.

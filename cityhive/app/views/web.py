@@ -1,3 +1,9 @@
+"""
+Web views for HTML responses.
+
+These views handle the main web interface pages and return HTML responses.
+"""
+
 import logging
 
 import aiohttp_jinja2
@@ -34,31 +40,3 @@ async def index(request: web.Request) -> dict[str, str]:
             "message": "Welcome to CityHive!",
             "error": "Some features may be temporarily unavailable",
         }
-
-
-async def health_check(request: web.Request) -> web.Response:
-    """
-    Health check endpoint for monitoring and load balancers.
-
-    Returns a simple JSON response indicating service status.
-    """
-    try:
-        # Test database connectivity
-        async with request.app[db_key]() as session:
-            session: AsyncSession
-            # Simple query to test database
-            from sqlalchemy import text
-
-            await session.execute(text("SELECT 1"))
-
-        return web.json_response({"status": "healthy", "service": "cityhive"})
-    except Exception:
-        logger.exception("Health check failed")
-        return web.json_response(
-            {
-                "status": "unhealthy",
-                "service": "cityhive",
-                "error": "Database connection failed",
-            },
-            status=503,
-        )
