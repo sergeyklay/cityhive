@@ -304,6 +304,12 @@ async def test_full_workflow(full_app_client):
         assert response.status == 200
 ```
 
+**CI/CD Test Strategy:**
+
+- **Unit Tests**: Run first, fast feedback, no external dependencies
+- **Integration Tests**: Run after database setup, test real connections
+- **Separation**: `make test-unit` vs `make test-integration` for CI efficiency
+
 **Logging Strategy Summary:**
 
 - **Unit Tests**: Global suppression + selective mocking when testing logging
@@ -580,12 +586,11 @@ def test_user_service_with_dependencies(mocker):
 ## Test Commands
 
 - **Run all tests**: `uv run --frozen pytest ./tests`
+- **Run unit tests only**: `uv run --frozen pytest -v ./tests/unit` (fast, no database required)
+- **Run integration tests only**: `uv run --frozen pytest -v ./tests/integration -m integration` (requires database)
 - **Run specific test**: `uv run --frozen pytest ./tests/unit/infrastructure/test_config.py`
-- **Run with coverage**: `uv run --frozen pytest --cov=cityhive`
 - **Run only fast tests**: `uv run --frozen pytest -m "not slow"`
-- **Run only integration tests**: `uv run --frozen pytest -m integration`
 - **Test aiohttp app**: `uv run --frozen pytest ./tests/unit/app/`
-- **Test integration scenarios**: `uv run --frozen pytest ./tests/integration/`
 
 ### Logging Control During Tests
 

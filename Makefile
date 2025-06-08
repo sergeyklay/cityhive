@@ -5,9 +5,22 @@ PKG_DIR := $(notdir $(CURDIR))
 
 .PHONY: test
 test:
-	@echo $(CS)Running tests for package: $(PKG_DIR)$(CE)
+	@echo $(CS)Running all tests for package: $(PKG_DIR)$(CE)
 	uv run --frozen coverage erase
 	uv run --frozen coverage run -m pytest -v ./tests
+	@echo
+
+.PHONY: test-unit
+test-unit:
+	@echo $(CS)Running unit tests for package: $(PKG_DIR)$(CE)
+	uv run --frozen coverage erase
+	uv run --frozen coverage run -m pytest -v ./tests/unit
+	@echo
+
+.PHONY: test-integration
+test-integration:
+	@echo $(CS)Running integration tests for package: $(PKG_DIR)$(CE)
+	uv run --frozen coverage run -m pytest -v ./tests/integration -m integration
 	@echo
 
 .PHONY: ccov

@@ -137,3 +137,20 @@ async def test_post_request_with_json_payload(aiohttp_client):
         assert response.status == 200
         data = await response.json()
         assert data["received"] == payload
+
+
+@pytest.mark.integration
+async def test_database_integration_with_full_app(full_app_client):
+    """Test that requires actual database connection."""
+    async with full_app_client.get("/health/ready") as response:
+        assert response.status == 200
+        data = await response.json()
+        assert "components" in data
+        assert data["status"] == "healthy"
+
+        db_component = next(
+            (c for c in data["components"] if c["name"] == "database"), None
+        )
+        assert db_component is not None
+        assert db_component["status"] == "healthy"
+        assert "response_time_ms" in db_component
