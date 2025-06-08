@@ -1,6 +1,6 @@
 ---
 description: Testing Guidelines
-globs: globs: tests/**/*.py
+globs: tests/**/*.py
 alwaysApply: false
 ---
 # Testing Guidelines
