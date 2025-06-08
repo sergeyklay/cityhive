@@ -73,9 +73,9 @@ docker compose up
 
 ### Container Management
 ```bash
-docker compose up --build    # Start all services
-docker compose down          # Stop all services
-docker compose logs app      # View application logs
+docker compose up --build         # Start all services
+docker compose down               # Stop all services
+docker compose logs cityhive_app  # View application logs
 ```
 
 ## Development Workflow
@@ -270,7 +270,7 @@ uv run pytest -vvs tests/path/to/test.py::test_function
 
 1. Check existing issues in GitHub repository
 2. Review documentation in `docs/` folder
-3. Check logs: `docker compose logs app`
+3. Check logs: `docker compose logs cityhive_app`
 4. Verify environment: `uv run --frozen --version`
 
 ## Editor Configuration
