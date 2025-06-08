@@ -18,63 +18,45 @@ alwaysApply: false
 ```bash
 # ✅ DO: Correct uv usage
 uv add package-name                    # Add new dependency
-uv add --dev pytest                    # Add development dependency
+uv add --group dev ruff                # Add development dependency
 uv add package-name --upgrade-package  # Upgrade specific package
 uv run tool-name                       # Run tools via uv
-uv sync                               # Install from lock file
+uv sync                                # Install from lock file
 
 # ❌ DON'T: Forbidden commands
 pip install package-name              # Never use pip
-uv pip install package-name          # Don't use uv pip
-uv add package-name@latest           # Don't use @latest syntax
+uv pip install package-name           # Don't use uv pip
+uv add package-name@latest            # Don't use @latest syntax
 ```
 
-## Dependency Categories
+## Quick Reference
 
-- **Production dependencies**: Core runtime requirements
-- **Development dependencies**: Testing, linting, formatting tools
-- **Optional dependencies**: Feature-specific extras
+```bash
+# Add dependency
+uv add package-name
 
-## pyproject.toml Structure
+# Add testing dependency
+uv add --group tesing pytest
 
-```toml
-[project]
-name = "cityhive"
-version = "0.1.0"
-dependencies = [
-    "aiohttp>=3.8.0",
-    "pydantic>=2.0.0",
-    "sqlalchemy>=2.0.0",
-]
+# Install from lock file
+uv sync
 
-[project.optional-dependencies]
-dev = [
-    "pytest>=7.0.0",
-    "ruff>=0.1.0",
-    "coverage>=7.0.0",
-]
+# Update dependencies
+uv sync --upgrade
 ```
 
-## Security and Updates
+## Critical Rules
 
-- **Regular updates**: Keep dependencies current for security
-- **Audit dependencies**: Use `uv audit` to check for vulnerabilities
-- **Pin critical versions**: Lock versions for stability-critical dependencies
-- **Review new dependencies**: Evaluate necessity before adding
-
-## Integration with CI/CD
-
-- **Use `uv sync --frozen`** in CI to ensure reproducible builds
-- **Cache uv files** for faster CI runs
-- **Validate lock file** is up to date with pyproject.toml
-
-## Troubleshooting
-
-- **Clean environment**: `uv clean` if dependency resolution fails
-- **Regenerate lock**: Delete `uv.lock` and run `uv lock` for major updates
-- **Check conflicts**: `uv tree` to visualize dependency relationships
+- **NEVER use pip** - uv only in this project
+- **Commit uv.lock** - always version control lock file
+- **Review before adding** - evaluate necessity of new dependencies
 
 ---
+
+**See also:**
+- [Development Guide](mdc:docs/development.md) for package management workflows
+- [Technology Stack](mdc:docs/technology-stack.md) for uv rationale and benefits
+- [CONTRIBUTING.md](mdc:CONTRIBUTING.md) for dependency guidelines in contributions
 
 **Key Points:**
 - uv provides faster, more reliable dependency management than pip

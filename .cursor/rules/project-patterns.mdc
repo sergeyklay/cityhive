@@ -1,0 +1,90 @@
+---
+description: Project Patterns
+globs: **/*.py
+alwaysApply: false
+---
+# Project Patterns
+
+**For Python code generation:** Essential patterns that must be followed in this codebase.
+
+## File Organization
+
+```
+cityhive/
+├── app/             # aiohttp web layer
+├── domain/          # Business logic (no external deps)
+├── infrastructure/  # Database, config, logging
+└── tests/           # Unit and integration tests
+```
+
+## Core Imports
+
+```python
+# Always use these for common operations
+from aiohttp import web
+from cityhive.infrastructure.logging import get_logger
+from sqlalchemy.ext.asyncio import AsyncSession
+
+logger = get_logger(__name__)
+```
+
+## Handler Pattern
+
+```python
+# ✅ Standard aiohttp handler
+async def endpoint_handler(request: web.Request) -> web.Response:
+    logger.info("Request started", path=request.path)
+
+    # Business logic here
+    result = await process_request(request)
+
+    return web.json_response({"data": result})
+```
+
+## Database Pattern
+
+```python
+# ✅ Async session with proper cleanup
+async def get_user_by_id(session: AsyncSession, user_id: int) -> User | None:
+    result = await session.execute(
+        select(User).where(User.id == user_id)
+    )
+    return result.scalar_one_or_none()
+```
+
+## Logging Pattern
+
+```python
+# ✅ Structured logging with key-value pairs
+logger.info(
+    "User operation completed",
+    user_id=123,
+    operation="create",
+    duration_ms=45,
+)
+
+# ❌ Never use f-strings in logging
+logger.info(f"User {user_id} created")  # Wrong!
+```
+
+## Test Pattern
+
+```python
+# ✅ Simple functional test
+def test_user_creation_with_valid_data():
+    # Arrange
+    user_data = {"name": "Test", "email": "test@example.com"}
+
+    # Act
+    result = create_user(user_data)
+
+    # Assert
+    assert result.success
+    assert result.user.name == "Test"
+```
+
+---
+
+**See also:**
+- [python-standards.mdc](mdc:.cursor/rules/python-standards.mdc) for detailed standards
+- [Architecture Guide](mdc:docs/architecture.md) for design principles

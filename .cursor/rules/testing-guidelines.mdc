@@ -1,6 +1,6 @@
 ---
 description: Testing Guidelines
-globs: globs: **/test_*.py
+globs: tests/**/*.py
 alwaysApply: false
 ---
 # Testing Guidelines
@@ -185,4 +185,6 @@ async def app():
 
 **See also:**
 - [python-standards.mdc](mdc:.cursor/rules/python-standards.mdc) for general Python conventions
-- Pytest documentation for advanced patterns
+- [Development Guide](mdc:docs/development.md) for test commands and setup
+- [Architecture Guide](mdc:docs/architecture.md) for testing architecture patterns
+- [CONTRIBUTING.md](mdc:CONTRIBUTING.md) for contribution and review process
