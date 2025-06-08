@@ -84,7 +84,7 @@ jobs:
           # Wait for PostgreSQL to be ready
           echo "Waiting for PostgreSQL to be ready..."
           timeout=60
-          while ! docker compose exec -T cityhive_db pg_isready -U cityhive -d cityhive_test; do
+          while ! docker compose exec -T cityhive_db pg_isready -U $POSTGRES_USER -d $POSTGRES_DB; do
             sleep 2
             timeout=$((timeout - 2))
             if [ $timeout -le 0 ]; then
@@ -96,19 +96,12 @@ jobs:
           echo "PostgreSQL is ready"
         env:
           POSTGRES_DB: cityhive_test
-
-      # - name: Verify test database setup
-      #   run: |
-      #     docker compose exec -T cityhive_db psql -U cityhive -d $POSTGRES_DB -c "SELECT version();"
-      #     docker compose exec -T cityhive_db psql -U cityhive -d $POSTGRES_DB -c "SELECT PostGIS_Version();"
-      #   env:
-      #     POSTGRES_DB: cityhive_test
+          POSTGRES_USER: cityhive
 
       - name: Run database migrations
         run: make migrate
         env:
           APP_ENV: testing
-          DATABASE_URI: postgresql+asyncpg://cityhive:cityhive@localhost:5432/cityhive_test
 
       - name: Run integration tests
         run: make test-integration
