@@ -1,5 +1,4 @@
 import logging
-from typing import Any
 
 import aiohttp_jinja2
 from aiohttp import web
@@ -11,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 @aiohttp_jinja2.template("index.html")
-async def index(request: web.Request) -> dict[str, Any]:
+async def index(request: web.Request) -> dict[str, str]:
     """
     Home page view.
 

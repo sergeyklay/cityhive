@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 """
 Application entry point for running the CityHive web application.
 
@@ -5,7 +7,7 @@ This module provides the main entry point when the app package is executed
 directly with `python -m cityhive.app`.
 """
 
-from cityhive.app.app import main
+from cityhive.app import main
 
 
 def run() -> None:
