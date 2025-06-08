@@ -46,13 +46,7 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(["user_id"], ["users.id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index(
-        "idx_hives_location",
-        "hives",
-        ["location"],
-        unique=False,
-        postgresql_using="gist",
-    )
+
     op.create_index(
         op.f("ix_hives_installed_at"), "hives", ["installed_at"], unique=False
     )
@@ -63,5 +57,4 @@ def downgrade() -> None:
     """Downgrade schema."""
     op.drop_index(op.f("ix_hives_user_id"), table_name="hives")
     op.drop_index(op.f("ix_hives_installed_at"), table_name="hives")
-    op.drop_index("idx_hives_location", table_name="hives", postgresql_using="gist")
     op.drop_table("hives")

@@ -7,9 +7,9 @@ services:
     container_name: cityhive_db
     restart: unless-stopped
     environment:
-      POSTGRES_DB: cityhive
-      POSTGRES_USER: cityhive
-      POSTGRES_PASSWORD: cityhive
+      POSTGRES_DB: ${POSTGRES_DB:-cityhive}
+      POSTGRES_USER: ${POSTGRES_USER:-cityhive}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-cityhive}
     mem_limit: 256M
     ports:
       - "127.0.0.1:5432:5432"
@@ -19,6 +19,7 @@ services:
           - cityhive-db
     volumes:
       - pgdata:/var/lib/postgresql/data
+      - ./scripts/init-postgis.sql:/docker-entrypoint-initdb.d/01-init-postgis.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s

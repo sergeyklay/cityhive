@@ -264,6 +264,57 @@ async def test_validation(aiohttp_client):
     # This can cause resource leaks and DNS warnings
 ```
 
+### Logging in Tests: Simple and Minimal
+
+**Default Approach: Global Suppression**
+
+All unit tests automatically suppress INFO-level logs via `tests/unit/conftest.py`:
+
+```python
+# ✅ DO: Most tests don't need to worry about logging
+def test_business_logic():
+    # Logging automatically suppressed - focus on behavior
+    result = function_under_test()
+    assert result == expected_value
+```
+
+**When Testing Logging Behavior Specifically:**
+
+```python
+# ✅ DO: Mock logger only when testing logging calls
+def test_function_logs_correctly(mocker):
+    mock_logger = mocker.patch("module.logger")
+
+    function_under_test()
+
+    # Verify specific logging behavior
+    mock_logger.info.assert_called_once_with("Expected message", key="value")
+    mock_logger.warning.assert_not_called()
+```
+
+**Integration Tests:**
+
+```python
+# ✅ DO: Integration tests use real logging with auto-suppression
+@pytest.mark.integration
+async def test_full_workflow(full_app_client):
+    # Real logging infrastructure, INFO logs suppressed
+    # WARNING/ERROR logs still visible for debugging
+    async with full_app_client.get("/api/health") as response:
+        assert response.status == 200
+```
+
+**CI/CD Test Strategy:**
+
+- **Unit Tests**: Run first, fast feedback, no external dependencies
+- **Integration Tests**: Run after database setup, test real connections
+- **Separation**: `make test-unit` vs `make test-integration` for CI efficiency
+
+**Logging Strategy Summary:**
+
+- **Unit Tests**: Global suppression + selective mocking when testing logging
+- **Integration Tests**: Real logging with INFO suppression for clean output
+
 ### aiohttp Testing Anti-Patterns
 
 **Common mistakes that cause resource leaks:**
@@ -290,6 +341,21 @@ async def test_email_validation(aiohttp_client):
 async def test_user_creation(aiohttp_client):
     # Tests both HTTP handling AND business logic
     # Should be split into unit and integration tests
+
+# ❌ DON'T: Complex logging fixtures for every test
+def test_function(mock_logger, suppress_all_logging):
+    # Over-engineered approach - unnecessary complexity
+
+# ✅ DO: Simple selective mocking when testing logging
+def test_function_logs_correctly(mocker):
+    mock_logger = mocker.patch("module.logger")
+    function_under_test()
+    mock_logger.info.assert_called_with("message", data="value")
+
+# ✅ DO: Most tests just focus on behavior (logging auto-suppressed)
+def test_function():
+    result = function_under_test()  # Clean, no logging noise
+    assert result == expected_value
 ```
 
 ### Test Performance Optimization
@@ -370,6 +436,67 @@ async def test_user_creation_stores_in_database(app_with_db):
 
     response = await create_user(request)
     assert response.status == 201
+```
+
+### aiohttp Integration Testing Best Practices
+
+**Use async context managers for proper resource cleanup:**
+
+```python
+# ✅ DO: Use async context manager for HTTP requests
+async def test_api_endpoint(aiohttp_client):
+    client = await aiohttp_client(app)
+
+    async with client.get("/api/users") as response:
+        assert response.status == 200
+        data = await response.json()
+        assert "users" in data
+
+# ❌ DON'T: Direct response handling (can cause resource leaks)
+async def test_api_endpoint_bad(aiohttp_client):
+    client = await aiohttp_client(app)
+    response = await client.get("/api/users")  # No context manager
+    assert response.status == 200
+```
+
+**Use hierarchical fixtures for different test scenarios:**
+
+```python
+# ✅ DO: Use appropriate fixture for test type
+async def test_validation_only(client):
+    """Use basic client for validation tests."""
+    async with client.post("/api/users", json=invalid_data) as response:
+        assert response.status == 400
+
+async def test_database_integration(client_with_db):
+    """Use client_with_db for database tests."""
+    async with client_with_db.post("/api/users", json=valid_data) as response:
+        assert response.status == 201
+
+async def test_full_application(full_app_client):
+    """Use full_app_client for end-to-end tests."""
+    async with full_app_client.get("/health") as response:
+        assert response.status == 200
+```
+
+**Test HTTP-specific concerns in integration tests:**
+
+```python
+# ✅ DO: Test HTTP headers, content types, and status codes
+async def test_json_content_type(aiohttp_client):
+    client = await aiohttp_client(app)
+
+    async with client.get("/api/users") as response:
+        assert response.content_type == "application/json"
+        assert "application/json" in response.headers["Content-Type"]
+
+# ✅ DO: Test custom headers
+async def test_custom_headers(aiohttp_client):
+    client = await aiohttp_client(app)
+    headers = {"Authorization": "Bearer token"}
+
+    async with client.get("/api/protected", headers=headers) as response:
+        assert response.status == 200
 ```
 
 ## Test Organization
@@ -459,10 +586,28 @@ def test_user_service_with_dependencies(mocker):
 ## Test Commands
 
 - **Run all tests**: `uv run --frozen pytest ./tests`
+- **Run unit tests only**: `uv run --frozen pytest -v ./tests/unit` (fast, no database required)
+- **Run integration tests only**: `uv run --frozen pytest -v ./tests/integration -m integration` (requires database)
 - **Run specific test**: `uv run --frozen pytest ./tests/unit/infrastructure/test_config.py`
-- **Run with coverage**: `uv run --frozen pytest --cov=cityhive`
 - **Run only fast tests**: `uv run --frozen pytest -m "not slow"`
 - **Test aiohttp app**: `uv run --frozen pytest ./tests/unit/app/`
+
+### Logging Control During Tests
+
+**Global Configuration (pyproject.toml):**
+- **Silent tests** (default): INFO logs suppressed, WARNING/ERROR visible
+- **Integration tests**: Auto-suppress via fixtures with level control
+
+**Command-Line Overrides:**
+- **Verbose logging**: `uv run --frozen pytest --log-cli-level=INFO -s`
+- **Debug logging**: `uv run --frozen pytest --log-cli-level=DEBUG -s`
+- **No logging**: `uv run --frozen pytest --log-disable=cityhive`
+- **Enable specific logger**: `uv run --frozen pytest --log-cli-level=INFO --capture=no`
+
+**Unit Test Approach:**
+- **Global suppression**: INFO logs automatically suppressed in `tests/unit/conftest.py`
+- **Selective mocking**: Use `mocker.patch("module.logger")` only when testing logging behavior
+- **Clean by default**: Most tests focus on business logic without logging noise
 
 ## Test Markers
 
