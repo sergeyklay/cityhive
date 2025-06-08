@@ -100,13 +100,13 @@ jobs:
       - name: Run database migrations
         run: make migrate
         env:
-          DATABASE_URI: postgresql+asyncpg://cityhive:cityhive@localhost:5432/cityhive_test
+          # DATABASE_URI: postgresql+asyncpg://cityhive:cityhive@localhost:5432/cityhive_test
           APP_ENV: testing
 
       - name: Run integration tests
         run: make test-integration
         env:
-          DATABASE_URI: postgresql+asyncpg://cityhive:cityhive@localhost:5432/cityhive_test
+          # DATABASE_URI: postgresql+asyncpg://cityhive:cityhive@localhost:5432/cityhive_test
           APP_ENV: testing
 
       - name: Stop PostgreSQL services
