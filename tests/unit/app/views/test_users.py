@@ -66,114 +66,42 @@ async def test_create_user_with_invalid_json_returns_bad_request(base_app, mocke
     assert response.status == 400
 
 
-async def test_create_user_with_missing_name_returns_validation_error(base_app, mocker):
-    data = {"email": "john@example.com"}
-    request = make_api_request("POST", "/api/users", base_app)
-    request.json = AsyncMock(return_value=data)
-
-    response = await create_user(request)
-
-    assert response.status == 400
-
-
-async def test_create_user_with_empty_name_returns_validation_error(base_app, mocker):
-    data = {"name": "", "email": "john@example.com"}
-    request = make_api_request("POST", "/api/users", base_app)
-    request.json = AsyncMock(return_value=data)
-
-    response = await create_user(request)
-
-    assert response.status == 400
-
-
-async def test_create_user_with_whitespace_name_returns_validation_error(
-    base_app, mocker
+@pytest.mark.parametrize(
+    "test_data,description",
+    [
+        ({"email": "john@example.com"}, "missing name"),
+        ({"name": "", "email": "john@example.com"}, "empty name"),
+        ({"name": "   ", "email": "john@example.com"}, "whitespace name"),
+    ],
+)
+async def test_create_user_with_invalid_name_returns_validation_error(
+    base_app, mocker, test_data, description
 ):
-    data = {"name": "   ", "email": "john@example.com"}
     request = make_api_request("POST", "/api/users", base_app)
-    request.json = AsyncMock(return_value=data)
+    request.json = AsyncMock(return_value=test_data)
 
     response = await create_user(request)
 
     assert response.status == 400
 
 
-async def test_create_user_with_missing_email_returns_validation_error(
-    base_app, mocker
+@pytest.mark.parametrize(
+    "test_data,description",
+    [
+        ({"name": "John"}, "missing email"),
+        ({"name": "John", "email": ""}, "empty email"),
+        ({"name": "John", "email": "   "}, "whitespace email"),
+        ({"name": "John", "email": "invalid-email"}, "invalid email format"),
+        ({"name": "John", "email": "no-domain@"}, "email missing domain"),
+        ({"name": "John", "email": "@no-local.com"}, "email missing local part"),
+        ({"name": "John", "email": "invalid@@domain.com"}, "email with double @"),
+    ],
+)
+async def test_create_user_with_invalid_email_returns_validation_error(
+    base_app, mocker, test_data, description
 ):
-    data = {"name": "John"}
     request = make_api_request("POST", "/api/users", base_app)
-    request.json = AsyncMock(return_value=data)
-
-    response = await create_user(request)
-
-    assert response.status == 400
-
-
-async def test_create_user_with_empty_email_returns_validation_error(base_app, mocker):
-    data = {"name": "John", "email": ""}
-    request = make_api_request("POST", "/api/users", base_app)
-    request.json = AsyncMock(return_value=data)
-
-    response = await create_user(request)
-
-    assert response.status == 400
-
-
-async def test_create_user_with_whitespace_email_returns_validation_error(
-    base_app, mocker
-):
-    data = {"name": "John", "email": "   "}
-    request = make_api_request("POST", "/api/users", base_app)
-    request.json = AsyncMock(return_value=data)
-
-    response = await create_user(request)
-
-    assert response.status == 400
-
-
-async def test_create_user_with_invalid_email_format_returns_validation_error(
-    base_app, mocker
-):
-    data = {"name": "John", "email": "invalid-email"}
-    request = make_api_request("POST", "/api/users", base_app)
-    request.json = AsyncMock(return_value=data)
-
-    response = await create_user(request)
-
-    assert response.status == 400
-
-
-async def test_create_user_with_email_missing_domain_returns_validation_error(
-    base_app, mocker
-):
-    data = {"name": "John", "email": "no-domain@"}
-    request = make_api_request("POST", "/api/users", base_app)
-    request.json = AsyncMock(return_value=data)
-
-    response = await create_user(request)
-
-    assert response.status == 400
-
-
-async def test_create_user_with_email_missing_local_returns_validation_error(
-    base_app, mocker
-):
-    data = {"name": "John", "email": "@no-local.com"}
-    request = make_api_request("POST", "/api/users", base_app)
-    request.json = AsyncMock(return_value=data)
-
-    response = await create_user(request)
-
-    assert response.status == 400
-
-
-async def test_create_user_with_invalid_email_format_double_at_returns_validation_error(
-    base_app, mocker
-):
-    data = {"name": "John", "email": "invalid@@domain.com"}
-    request = make_api_request("POST", "/api/users", base_app)
-    request.json = AsyncMock(return_value=data)
+    request.json = AsyncMock(return_value=test_data)
 
     response = await create_user(request)
 

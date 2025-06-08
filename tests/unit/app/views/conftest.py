@@ -12,6 +12,18 @@ from aiohttp.test_utils import make_mocked_request
 from cityhive.infrastructure.typedefs import db_key
 
 
+@pytest.fixture(autouse=True)
+def suppress_view_logging(mocker):
+    """
+    Suppress logger output for all view tests by default.
+
+    This prevents noise from expected exceptions and error scenarios.
+    Individual tests can override by explicitly testing logging behavior.
+    """
+    mocker.patch("cityhive.app.views.users.logger")
+    mocker.patch("cityhive.app.views.hives.logger")
+
+
 @pytest.fixture
 def base_app():
     """Basic aiohttp application for unit testing."""
