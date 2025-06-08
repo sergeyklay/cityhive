@@ -23,6 +23,159 @@ def test_user():
     # Test implementation
 ```
 
+## Fixture Organization and conftest.py
+
+- **Follow "Local when possible, shared when necessary" principle**
+- **Move fixtures to conftest.py** when they are used by 2+ test modules
+- **Keep fixtures in test files** when they are domain-specific or likely to change
+
+### When to Move Fixtures to conftest.py
+
+**✅ Move to conftest.py:**
+- **Cross-module reuse**: Used by multiple test files across different domains
+- **Fundamental patterns**: Core infrastructure like database session mocks
+- **Stable APIs**: Utilities that won't change often
+- **Generic helpers**: AsyncMock context managers, common mocks
+
+```python
+# ✅ DO: Shared fixtures in tests/conftest.py
+class MockAsyncContextManager:
+    """Reusable async context manager for mocking database sessions."""
+
+    def __init__(self, session):
+        self.session = session
+
+    async def __aenter__(self):
+        return self.session
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        pass
+
+@pytest.fixture
+def mock_session():
+    """Create a mock async database session."""
+    return AsyncMock()
+
+@pytest.fixture
+def session_maker(mock_session):
+    """Create a session maker function that returns a context manager."""
+    def _session_maker():
+        return MockAsyncContextManager(mock_session)
+    return _session_maker
+```
+
+**❌ Keep in test files:**
+- **Domain-specific**: Test data tied to specific APIs or business logic
+- **Frequent changes**: Fixtures that evolve with feature development
+- **Complex setup**: Multi-step scenarios specific to test cases
+- **Single-use fixtures**: Only needed by one test module
+
+```python
+# ✅ DO: Domain-specific fixtures in test files
+@pytest.fixture
+def user_data():
+    return {"name": "John Beekeeper", "email": "john@example.com"}
+
+@pytest.fixture
+def mock_user(mocker):
+    user = User(id=1, name="John", email="john@example.com")
+    user.registered_at = mocker.MagicMock()
+    return user
+
+@pytest.fixture
+def base_app():
+    """Create a basic aiohttp application without database setup."""
+    app = web.Application()
+    app.router.add_post("/api/users", create_user)
+    return app
+```
+
+### Fixture Composition Patterns
+
+- **Build hierarchical fixtures**: Create composable fixtures that depend on each other
+- **Separate concerns**: Split database setup from application setup from client creation
+- **Use descriptive naming**: Make fixture purpose clear from the name
+
+```python
+# ✅ DO: Composable fixture hierarchy
+@pytest.fixture
+def base_app():
+    """Basic aiohttp application with routes."""
+    app = web.Application()
+    app.router.add_post("/api/users", create_user)
+    return app
+
+@pytest.fixture
+def app_with_db(base_app, session_maker):
+    """Application with database configured."""
+    base_app[db_key] = session_maker
+    return base_app
+
+@pytest.fixture
+async def client(aiohttp_client, base_app):
+    """Test client for validation-only tests."""
+    return await aiohttp_client(base_app)
+
+@pytest.fixture
+async def client_with_db(aiohttp_client, app_with_db):
+    """Test client with database configured."""
+    return await aiohttp_client(app_with_db)
+```
+
+### Fixture Scope Strategy
+
+- **Function scope** (default): For test data and mocks that should be fresh per test
+- **Module scope**: For expensive setup that can be shared within a module
+- **Session scope**: For very expensive resources shared across entire test suite
+
+```python
+# ✅ DO: Appropriate fixture scoping
+@pytest.fixture(scope="session")
+def expensive_resource():
+    """Expensive setup shared across all tests."""
+    return create_expensive_resource()
+
+@pytest.fixture(scope="module")
+def module_database():
+    """Database setup shared within module."""
+    return setup_test_database()
+
+@pytest.fixture  # Default: scope="function"
+def fresh_data():
+    """Fresh data for each test."""
+    return {"count": 0}
+```
+
+### DRY Principle in Test Fixtures
+
+- **Extract common setup patterns** into reusable fixtures
+- **Eliminate duplication** across test files without over-centralizing
+- **Refactor repetitive test setup** into fixture composition
+
+```python
+# ❌ DON'T: Repetitive setup in every test
+async def test_endpoint_success(aiohttp_client):
+    app = web.Application()
+    app[db_key] = session_maker
+    app.router.add_post("/api/users", create_user)
+    client = await aiohttp_client(app)
+    # Test logic...
+
+async def test_endpoint_failure(aiohttp_client):
+    app = web.Application()
+    app[db_key] = session_maker  # Duplicated!
+    app.router.add_post("/api/users", create_user)  # Duplicated!
+    client = await aiohttp_client(app)
+    # Test logic...
+
+# ✅ DO: Use composable fixtures
+async def test_endpoint_success(client_with_db):
+    # Test logic only...
+
+async def test_endpoint_failure(client_with_db):
+    # Test logic only...
+```
+
 ## aiohttp Testing Patterns
 
 - **Use aiohttp test client** - for integration testing web endpoints
