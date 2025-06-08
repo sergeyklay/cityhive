@@ -19,14 +19,25 @@ wait_for_db() {
 
     # Extract database connection details from DATABASE_URI
     local db_connection_info
-    db_connection_info=$(python /app/scripts/db_connection_info.py)
+    if ! db_connection_info=$(python /app/scripts/db_connection_info.py); then
+        echo "Failed to parse DATABASE_URI. Please check your database configuration."
+        return 1
+    fi
 
-    if [ $? -ne 0 ]; then
+    # Validate that we got output from the script
+    if [ -z "$db_connection_info" ]; then
+        echo "Empty response from database connection parser."
         return 1
     fi
 
     # Parse the connection info
     read -r DB_HOST DB_PORT DB_USER DB_NAME <<< "$db_connection_info"
+
+    # Validate parsed components
+    if [ -z "$DB_HOST" ] || [ -z "$DB_PORT" ] || [ -z "$DB_USER" ] || [ -z "$DB_NAME" ]; then
+        echo "Invalid database connection information: '$db_connection_info'"
+        return 1
+    fi
 
     echo "Checking database connection to $DB_HOST:$DB_PORT (database: $DB_NAME, user: $DB_USER)..."
 
