@@ -31,6 +31,48 @@ from cityhive.infrastructure.typedefs import db_key
 logger = get_logger(__name__)
 
 
+def _validate_user_data(
+    data: dict,
+) -> tuple[UserRegistrationData, None] | tuple[None, web.Response]:
+    """
+    Validate and parse user registration data.
+
+    Returns:
+        Tuple of (UserRegistrationData, None) on success
+        or (None, error_response) on failure
+    """
+    # Sanitize input fields
+    name = sanitize_string_field(data.get("name"))
+    email = sanitize_email_field(data.get("email"))
+
+    # Validate required fields
+    name_validation = validate_required_field(name, "Name")
+    if not name_validation.is_valid:
+        return None, create_error_response(
+            name_validation.error_message or "Name validation failed", 400
+        )
+
+    email_validation = validate_required_field(email, "Email")
+    if not email_validation.is_valid:
+        return None, create_error_response(
+            email_validation.error_message or "Email validation failed", 400
+        )
+
+    # Validate email format
+    email_format_validation = validate_email(email)
+    if not email_format_validation.is_valid:
+        return None, create_error_response(
+            email_format_validation.error_message or "Email format invalid", 400
+        )
+
+    # Get normalized email for storage consistency
+    normalized_email = get_normalized_email(email)
+    if normalized_email is None:
+        return None, create_error_response("Invalid email format", 400)
+
+    return UserRegistrationData(name=name, email=normalized_email), None
+
+
 async def create_user(request: web.Request) -> web.Response:
     """
     Register a new user.
@@ -48,51 +90,24 @@ async def create_user(request: web.Request) -> web.Response:
     - 500: Internal server error
     """
     try:
-        # Parse JSON request with proper error handling
         data, parse_error = await parse_json_request(request)
         if parse_error:
             return create_error_response(parse_error, 400)
 
-        # Ensure data is not None after successful parsing
-        assert data is not None
+        if data is None:
+            return create_error_response("Invalid JSON data", 400)
 
-        # Sanitize input fields
-        name = sanitize_string_field(data.get("name"))
-        email = sanitize_email_field(data.get("email"))
+        registration_data, validation_error = _validate_user_data(data)
+        if validation_error:
+            return validation_error
 
-        # Validate required fields
-        name_validation = validate_required_field(name, "Name")
-        if not name_validation.is_valid:
-            return create_error_response(
-                name_validation.error_message or "Name validation failed", 400
-            )
-
-        email_validation = validate_required_field(email, "Email")
-        if not email_validation.is_valid:
-            return create_error_response(
-                email_validation.error_message or "Email validation failed", 400
-            )
-
-        # Validate email format
-        email_format_validation = validate_email(email)
-        if not email_format_validation.is_valid:
-            return create_error_response(
-                email_format_validation.error_message or "Email format invalid", 400
-            )
-
-        # Get normalized email for storage consistency
-        normalized_email = get_normalized_email(email)
-        if normalized_email is None:
-            return create_error_response("Invalid email format", 400)
-
-        # Create registration data with normalized email
-        registration_data = UserRegistrationData(name=name, email=normalized_email)
-
-        # Register user through domain service
         async with request.app[db_key]() as session:
             session: AsyncSession
             user_service = UserService()
-            result = await user_service.register_user(session, registration_data)
+            result = await user_service.register_user(
+                session,
+                registration_data,  # type: ignore
+            )
 
             if result.success and result.user:
                 logger.info(
@@ -114,8 +129,7 @@ async def create_user(request: web.Request) -> web.Response:
                     status=201,
                 )
 
-            # Determine appropriate HTTP status code based on structured error type
-            status_code = 400  # Default to client error
+            status_code = 400
             if result.error_type == UserRegistrationErrorType.USER_EXISTS:
                 status_code = 409
             elif result.error_type in (
@@ -127,7 +141,7 @@ async def create_user(request: web.Request) -> web.Response:
 
             logger.warning(
                 "User registration failed",
-                email=email,
+                email=registration_data.email,  # type: ignore
                 error_type=result.error_type.value if result.error_type else None,
                 error=result.error_message,
             )

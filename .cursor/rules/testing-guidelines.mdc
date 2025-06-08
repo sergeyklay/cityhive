@@ -1,6 +1,6 @@
 ---
 description: Testing Guidelines
-globs: tests/**/*.py
+globs: **/tests/**/*.py
 alwaysApply: false
 ---
 # Testing Guidelines
@@ -178,32 +178,198 @@ async def test_endpoint_failure(client_with_db):
 
 ## aiohttp Testing Patterns
 
-- **Use aiohttp test client** - for integration testing web endpoints
-- **Mock database sessions** - isolate business logic from data layer
-- **Test middleware independently** - unit test middleware behavior
+### Unit Tests vs Integration Tests
+
+**Choose the right testing approach:**
+
+- **Unit Tests**: Test view functions directly without HTTP infrastructure
+  - Use `make_mocked_request` from `aiohttp.test_utils`
+  - Call view functions directly: `await create_user(request)`
+  - No networking, no DNS resolution, no resource leaks
+  - Always prefer strategies with faster execution
+
+- **Integration Tests**: Test full HTTP request/response cycle
+  - Use `aiohttp_client` for real HTTP testing
+  - Tests middleware, routing, and full request pipeline
+  - Use sparingly for critical user journeys
 
 ```python
-# ✅ DO: aiohttp client testing
-async def test_health_endpoint_returns_healthy_status(aiohttp_client):
-    app = await create_app()
+# ✅ DO: Unit testing with direct function calls
+from aiohttp.test_utils import make_mocked_request
+
+async def test_create_user_with_valid_data_returns_success(app_with_db):
+    data = {"name": "John Doe", "email": "john@example.com"}
+    request = make_mocked_request("POST", "/api/users", app=app_with_db)
+    request.json = AsyncMock(return_value=data)
+
+    response = await create_user(request)
+
+    assert response.status == 201
+
+# ✅ DO: Integration testing for critical paths
+async def test_full_user_registration_flow(aiohttp_client, app_with_db):
+    client = await aiohttp_client(app_with_db)
+
+    async with client.post("/api/users", json=user_data) as response:
+        assert response.status == 201
+        data = await response.json()
+        assert data["user"]["email"] == user_data["email"]
+
+# ❌ DON'T: Use aiohttp_client for simple validation tests
+async def test_user_validation(aiohttp_client):  # Creates unnecessary HTTP server
+    app = web.Application()
+    client = await aiohttp_client(app)
+    # This is unit testing disguised as integration testing
+```
+
+### Resource Management in Tests
+
+**Prevent resource leaks and DNS warnings:**
+
+- **Avoid networking in unit tests** - eliminates resource leaks and DNS resolution
+- **Use proper fixture cleanup** - ensure all resources are properly closed
+- **Mock external dependencies** - prevent real network calls
+
+```python
+# ✅ DO: Proper resource management with fixtures
+@pytest.fixture
+async def mock_session():
+    """Mock database session with proper cleanup."""
+    session = AsyncMock()
+    yield session
+    # Cleanup handled by AsyncMock
+
+@pytest.fixture
+def session_maker(mock_session):
+    """Session maker that returns a mock context manager."""
+    def _session_maker():
+        return MockAsyncContextManager(mock_session)
+    return _session_maker
+
+# ✅ DO: Unit test without HTTP infrastructure
+async def test_user_creation_validation_only():
+    # No aiohttp_client needed - tests validation logic directly
+    data = {"name": "", "email": "invalid"}
+    request = make_mocked_request("POST", "/api/users")
+    request.json = AsyncMock(return_value=data)
+
+    response = await create_user(request)
+    assert response.status == 400
+
+# ❌ DON'T: Create unnecessary HTTP infrastructure for unit tests
+async def test_validation(aiohttp_client):
+    app = web.Application()  # Unnecessary overhead
+    app.router.add_post("/api/users", create_user)  # Routing not needed
+    client = await aiohttp_client(app)  # Creates test server
+    # This can cause resource leaks and DNS warnings
+```
+
+### aiohttp Testing Anti-Patterns
+
+**Common mistakes that cause resource leaks:**
+
+```python
+# ❌ DON'T: Repetitive app creation in every test
+async def test_endpoint_a(aiohttp_client):
+    app = web.Application()
+    app[db_key] = session_maker
     client = await aiohttp_client(app)
 
-    resp = await client.get("/health")
-
-    assert resp.status == 200
-    data = await resp.json()
-    assert data["status"] == "healthy"
-
-# ✅ DO: Mock database for handler testing
-async def test_index_handler_with_db_error(aiohttp_client, mocker):
-    mock_session = mocker.patch("cityhive.app.views.request.app")
-    mock_session.side_effect = Exception("DB Error")
-
-    app = await create_app()
+async def test_endpoint_b(aiohttp_client):
+    app = web.Application()  # Duplicated setup
+    app[db_key] = session_maker  # Duplicated setup
     client = await aiohttp_client(app)
 
-    resp = await client.get("/")
-    assert resp.status == 200  # Should handle gracefully
+# ❌ DON'T: Using integration tests for validation logic
+async def test_email_validation(aiohttp_client):
+    # This creates unnecessary HTTP server for simple validation
+    app = web.Application()
+    client = await aiohttp_client(app)
+
+# ❌ DON'T: Mixing test types
+async def test_user_creation(aiohttp_client):
+    # Tests both HTTP handling AND business logic
+    # Should be split into unit and integration tests
+```
+
+### Test Performance Optimization
+
+**Prefer faster unit tests over slower integration tests:**
+
+- **Unit tests**: ~0.25 seconds for 42 tests
+- **Integration tests**: Several seconds due to HTTP overhead
+- **Use integration tests sparingly** for end-to-end validation
+- **Bulk of testing** should be fast unit tests
+
+```python
+# ✅ DO: Fast unit test suite
+async def test_validation_errors_return_400():
+    # Direct function call - no HTTP overhead
+    response = await create_user(invalid_request)
+    assert response.status == 400
+
+async def test_database_error_returns_500():
+    # Mock database failure - no real database
+    with patch("service.create_user") as mock:
+        mock.side_effect = DatabaseError()
+        response = await create_user(request)
+        assert response.status == 500
+
+# ✅ DO: Targeted integration test
+async def test_complete_user_registration_flow(aiohttp_client):
+    # Only test critical user journey end-to-end
+    client = await aiohttp_client(app)
+    response = await client.post("/api/users", json=valid_data)
+    assert response.status == 201
+```
+
+### Mock Request Creation
+
+**Use aiohttp's test utilities for unit tests:**
+
+```python
+from aiohttp.test_utils import make_mocked_request
+from unittest.mock import AsyncMock
+
+# ✅ DO: Proper mock request setup
+async def test_json_parsing_error():
+    request = make_mocked_request("POST", "/api/users")
+    request.json = AsyncMock(side_effect=json.JSONDecodeError("Invalid", "", 0))
+
+    response = await create_user(request)
+    assert response.status == 400
+
+# ✅ DO: Mock successful JSON parsing
+async def test_successful_user_creation():
+    data = {"name": "John", "email": "john@example.com"}
+    request = make_mocked_request("POST", "/api/users", app=app_with_db)
+    request.json = AsyncMock(return_value=data)
+
+    response = await create_user(request)
+    assert response.status == 201
+```
+
+### Test Architecture Patterns
+
+**Follow clean separation between test types:**
+
+```python
+# ✅ DO: Separate validation from database tests
+async def test_user_validation_rejects_invalid_email():
+    """Test validation logic without database."""
+    request = make_mocked_request("POST", "/api/users")
+    request.json = AsyncMock(return_value={"email": "invalid"})
+
+    response = await create_user(request)
+    assert response.status == 400
+
+async def test_user_creation_stores_in_database(app_with_db):
+    """Test database integration with mocked session."""
+    request = make_mocked_request("POST", "/api/users", app=app_with_db)
+    request.json = AsyncMock(return_value={"name": "John", "email": "john@example.com"})
+
+    response = await create_user(request)
+    assert response.status == 201
 ```
 
 ## Test Organization

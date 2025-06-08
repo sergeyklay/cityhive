@@ -152,3 +152,141 @@ def get_normalized_email(email: str) -> str | None:
         return validated_email.normalized
     except (SyntaxError, Exception):
         return None
+
+
+def validate_latitude(latitude: float | None) -> ValidationResult:
+    """
+    Validate latitude coordinate.
+
+    Args:
+        latitude: Latitude value to validate
+
+    Returns:
+        ValidationResult with validity status and optional error message
+
+    Examples:
+        >>> validate_latitude(45.5)
+        ValidationResult(is_valid=True, error_message=None)
+
+        >>> validate_latitude(95.0)
+        ValidationResult(is_valid=False, error_message="...")
+    """
+    if latitude is None:
+        return ValidationResult(True)  # Optional field
+
+    try:
+        lat_float = float(latitude)
+        if -90.0 <= lat_float <= 90.0:
+            return ValidationResult(True)
+        return ValidationResult(False, "Latitude must be between -90 and 90 degrees")
+    except (ValueError, TypeError):
+        return ValidationResult(False, "Latitude must be a valid number")
+
+
+def validate_longitude(longitude: float | None) -> ValidationResult:
+    """
+    Validate longitude coordinate.
+
+    Args:
+        longitude: Longitude value to validate
+
+    Returns:
+        ValidationResult with validity status and optional error message
+
+    Examples:
+        >>> validate_longitude(-73.5)
+        ValidationResult(is_valid=True, error_message=None)
+
+        >>> validate_longitude(185.0)
+        ValidationResult(is_valid=False, error_message="...")
+    """
+    if longitude is None:
+        return ValidationResult(True)  # Optional field
+
+    try:
+        lon_float = float(longitude)
+        if -180.0 <= lon_float <= 180.0:
+            return ValidationResult(True)
+        return ValidationResult(False, "Longitude must be between -180 and 180 degrees")
+    except (ValueError, TypeError):
+        return ValidationResult(False, "Longitude must be a valid number")
+
+
+def validate_coordinates(
+    latitude: float | None, longitude: float | None
+) -> ValidationResult:
+    """
+    Validate coordinate pair consistency.
+
+    Args:
+        latitude: Latitude value
+        longitude: Longitude value
+
+    Returns:
+        ValidationResult with validity status and optional error message
+
+    Examples:
+        >>> validate_coordinates(45.5, -73.5)
+        ValidationResult(is_valid=True, error_message=None)
+
+        >>> validate_coordinates(45.5, None)
+        ValidationResult(is_valid=False, error_message="...")
+    """
+    # Both must be provided together or both must be None
+    if (latitude is None) != (longitude is None):
+        return ValidationResult(
+            False, "Both latitude and longitude must be provided together"
+        )
+
+    # If both are None, that's valid (no location)
+    if latitude is None and longitude is None:
+        return ValidationResult(True)
+
+    # Validate individual coordinates
+    lat_result = validate_latitude(latitude)
+    if not lat_result.is_valid:
+        return lat_result
+
+    lon_result = validate_longitude(longitude)
+    if not lon_result.is_valid:
+        return lon_result
+
+    return ValidationResult(True)
+
+
+def sanitize_numeric_field(value: str | float | int | None) -> float | None:
+    """
+    Sanitize numeric input field.
+
+    Args:
+        value: Numeric value to sanitize
+
+    Returns:
+        Sanitized float value or None if invalid/empty
+
+    Examples:
+        >>> sanitize_numeric_field("45.5")
+        45.5
+
+        >>> sanitize_numeric_field("")
+        None
+
+        >>> sanitize_numeric_field("invalid")
+        None
+    """
+    if value is None:
+        return None
+
+    if isinstance(value, (int, float)):
+        return float(value)
+
+    if isinstance(value, str):
+        value = value.strip()
+        if not value:
+            return None
+        try:
+            return float(value)
+        except ValueError:
+            return None
+
+    return None

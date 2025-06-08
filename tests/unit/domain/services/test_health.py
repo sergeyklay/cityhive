@@ -31,6 +31,14 @@ class MockAsyncContextManager:
         return None
 
 
+@pytest.fixture(autouse=True)
+def suppress_health_logging(mocker):
+    """
+    Suppress logger output for all health tests by default.
+    """
+    mocker.patch("cityhive.domain.services.health.get_logger")
+
+
 def test_health_status_has_expected_values():
     """Test that health status enumeration has expected values."""
     assert HealthStatus.HEALTHY == "healthy"

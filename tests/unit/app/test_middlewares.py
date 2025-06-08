@@ -13,6 +13,15 @@ from cityhive.app.middlewares import (
 )
 
 
+@pytest.fixture(autouse=True)
+def suppress_middleware_logging(mocker):
+    """
+    Suppress logger output for all middleware tests by default.
+    """
+    mocker.patch("cityhive.app.middlewares.logger")
+    mocker.patch("cityhive.app.middlewares.get_logger")
+
+
 async def test_handle_404_returns_correct_status_and_template(mocker):
     mock_render = mocker.patch(
         "cityhive.app.middlewares.aiohttp_jinja2.render_template"
