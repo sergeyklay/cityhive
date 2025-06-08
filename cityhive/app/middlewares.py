@@ -78,7 +78,7 @@ async def logging_middleware(
     import time
     import uuid
 
-    start_time = time.time()
+    start_time = time.perf_counter()
     request_id = str(uuid.uuid4())
 
     # Clear any existing context and bind request-specific information
@@ -103,7 +103,7 @@ async def logging_middleware(
 
     try:
         response = await handler(request)
-        duration = time.time() - start_time
+        duration = time.perf_counter() - start_time
 
         request_logger.info(
             "Request completed",
@@ -114,7 +114,7 @@ async def logging_middleware(
         )
         return response
     except Exception as e:
-        duration = time.time() - start_time
+        duration = time.perf_counter() - start_time
         request_logger.error(
             "Request failed",
             method=request.method,
