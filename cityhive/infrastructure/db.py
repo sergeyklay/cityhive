@@ -4,8 +4,8 @@ from collections.abc import AsyncGenerator
 from aiohttp import web
 from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker, create_async_engine
 
-from cityhive.app.typedefs import db_key
 from cityhive.infrastructure.config import get_config
+from cityhive.infrastructure.typedefs import db_key
 
 logger = logging.getLogger(__name__)
 

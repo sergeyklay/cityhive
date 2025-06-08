@@ -5,7 +5,7 @@ import aiohttp_jinja2
 from aiohttp import web
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from cityhive.app.typedefs import db_key
+from cityhive.infrastructure.typedefs import db_key
 
 logger = logging.getLogger(__name__)
 

@@ -4,11 +4,11 @@ import aiohttp_jinja2
 import jinja2
 from aiohttp import web
 
-from cityhive.app.db import pg_context
 from cityhive.app.middlewares import setup_middlewares
 from cityhive.app.routes import setup_routes, setup_static_routes
-from cityhive.app.typedefs import config_key
 from cityhive.infrastructure.config import Config, get_config
+from cityhive.infrastructure.db import pg_context
+from cityhive.infrastructure.typedefs import config_key
 
 
 def setup_templates(app: web.Application) -> None:
