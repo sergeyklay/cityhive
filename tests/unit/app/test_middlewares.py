@@ -273,10 +273,8 @@ def test_setup_middlewares_adds_correct_middlewares_in_order():
     setup_middlewares(app)
 
     assert len(app.middlewares) == 2
-
-    middlewares = list(app.middlewares)
-    assert middlewares[0] is logging_middleware
-    assert callable(middlewares[1])
+    assert app.middlewares[0] is logging_middleware
+    assert callable(app.middlewares[1])
 
 
 def test_setup_middlewares_configures_error_middleware_correctly(mocker):
@@ -288,7 +286,7 @@ def test_setup_middlewares_configures_error_middleware_correctly(mocker):
     setup_middlewares(app)
 
     mock_create.assert_called_once_with({404: handle_404, 500: handle_500})
-    assert mock_middleware in app.middlewares
+    assert app.middlewares[1] is mock_middleware
 
 
 @pytest.mark.integration
