@@ -8,11 +8,13 @@ import pytest
 import structlog
 
 from cityhive.infrastructure.logging import (
+    StructlogHandler,
     bind_request_context,
     clear_request_context,
     configure_request_logging,
     configure_stdlib_logging,
     configure_structlog,
+    configure_third_party_loggers,
     get_logger,
     get_processors_for_development,
     get_processors_for_production,
@@ -37,14 +39,14 @@ def test_get_shared_processors_returns_expected_number_of_processors():
     processors = get_shared_processors()
 
     assert len(processors) == 9
-    assert callable(processors[0])  # merge_contextvars
-    assert callable(processors[1])  # add_log_level
-    assert callable(processors[2])  # add_logger_name
+    assert callable(processors[0])
+    assert callable(processors[1])
+    assert callable(processors[2])
     assert isinstance(processors[3], structlog.stdlib.PositionalArgumentsFormatter)
     assert isinstance(processors[4], structlog.processors.TimeStamper)
-    assert callable(processors[5])  # StackInfoRenderer or similar
-    assert callable(processors[6])  # format_exc_info
-    assert callable(processors[7])  # UnicodeDecoder
+    assert callable(processors[5])
+    assert callable(processors[6])
+    assert callable(processors[7])
     assert isinstance(processors[8], structlog.processors.CallsiteParameterAdder)
 
 
@@ -283,14 +285,14 @@ def test_shared_processors_order_is_correct():
 
     processor_types = [type(p).__name__ for p in processors]
     expected_order = [
-        "function",  # merge_contextvars
-        "function",  # add_log_level
-        "function",  # add_logger_name
+        "function",
+        "function",
+        "function",
         "PositionalArgumentsFormatter",
         "TimeStamper",
-        "function",  # StackInfoRenderer
-        "function",  # format_exc_info
-        "function",  # UnicodeDecoder
+        "function",
+        "function",
+        "function",
         "CallsiteParameterAdder",
     ]
 
@@ -313,3 +315,244 @@ def test_development_processors_include_console_renderer_at_end():
     processors = get_processors_for_development()
 
     assert isinstance(processors[-1], structlog.dev.ConsoleRenderer)
+
+
+def test_structlog_handler_creates_with_default_logger_name():
+    handler = StructlogHandler()
+
+    assert handler.structlog_logger is not None
+
+
+def test_structlog_handler_creates_with_custom_logger_name():
+    handler = StructlogHandler("custom")
+
+    assert handler.structlog_logger is not None
+
+
+def test_structlog_handler_emit_logs_message_with_structured_data(mocker):
+    mock_structlog_logger = MagicMock()
+    mocker.patch("structlog.get_logger", return_value=mock_structlog_logger)
+
+    handler = StructlogHandler("test")
+
+    record = logging.LogRecord(
+        name="test.module",
+        level=logging.INFO,
+        pathname="/path/to/file.py",
+        lineno=42,
+        msg="Test message",
+        args=(),
+        exc_info=None,
+        func="test_function",
+    )
+    record.module = "test_module"
+
+    handler.emit(record)
+
+    mock_structlog_logger.info.assert_called_once_with(
+        "Test message",
+        logger_name="test.module",
+        module="test_module",
+        func_name="test_function",
+        lineno=42,
+    )
+
+
+def test_structlog_handler_emit_handles_different_log_levels(mocker):
+    mock_structlog_logger = MagicMock()
+    mocker.patch("structlog.get_logger", return_value=mock_structlog_logger)
+
+    handler = StructlogHandler("test")
+
+    record = logging.LogRecord(
+        name="test.module",
+        level=logging.WARNING,
+        pathname="/path/to/file.py",
+        lineno=42,
+        msg="Warning message",
+        args=(),
+        exc_info=None,
+        func="test_function",
+    )
+    record.module = "test_module"
+
+    handler.emit(record)
+
+    mock_structlog_logger.warning.assert_called_once_with(
+        "Warning message",
+        logger_name="test.module",
+        module="test_module",
+        func_name="test_function",
+        lineno=42,
+    )
+
+
+def test_structlog_handler_emit_falls_back_to_info_for_unknown_level(mocker):
+    mock_structlog_logger = MagicMock()
+    if hasattr(mock_structlog_logger, "custom"):
+        delattr(mock_structlog_logger, "custom")
+    mocker.patch("structlog.get_logger", return_value=mock_structlog_logger)
+
+    handler = StructlogHandler("test")
+
+    record = logging.LogRecord(
+        name="test.module",
+        level=99,
+        pathname="/path/to/file.py",
+        lineno=42,
+        msg="Custom level message",
+        args=(),
+        exc_info=None,
+        func="test_function",
+    )
+    record.levelname = "CUSTOM"
+    record.module = "test_module"
+
+    handler.emit(record)
+
+    mock_structlog_logger.info.assert_called_once_with(
+        "Custom level message",
+        logger_name="test.module",
+        module="test_module",
+        func_name="test_function",
+        lineno=42,
+    )
+
+
+def test_configure_third_party_loggers_with_no_loggers():
+    configure_third_party_loggers()
+
+
+@pytest.mark.parametrize(
+    "level,expected_level",
+    [
+        (logging.DEBUG, logging.DEBUG),
+        (logging.INFO, logging.INFO),
+        (logging.WARNING, logging.WARNING),
+        (logging.ERROR, logging.ERROR),
+    ],
+)
+def test_configure_third_party_loggers_sets_correct_level_and_structlog_handler(
+    level, expected_level
+):
+    test_logger_name = f"test_cityhive_logger_{level}"
+
+    configure_third_party_loggers(test_logger_name, level=level)
+
+    test_logger = logging.getLogger(test_logger_name)
+    assert test_logger.level == expected_level
+    assert test_logger.propagate is False
+    assert len(test_logger.handlers) == 1
+    assert isinstance(test_logger.handlers[0], StructlogHandler)
+
+
+def test_configure_third_party_loggers_configures_multiple_loggers_correctly():
+    logger_names = ["test_logger_1", "test_logger_2", "test_logger_3"]
+
+    configure_third_party_loggers(*logger_names, level=logging.WARNING)
+
+    for logger_name in logger_names:
+        test_logger = logging.getLogger(logger_name)
+        assert test_logger.level == logging.WARNING
+        assert test_logger.propagate is False
+        assert len(test_logger.handlers) == 1
+        assert isinstance(test_logger.handlers[0], StructlogHandler)
+
+
+def test_structlog_handler_emit_includes_exception_info_when_present(mocker):
+    mock_structlog_logger = MagicMock()
+    mocker.patch("structlog.get_logger", return_value=mock_structlog_logger)
+
+    handler = StructlogHandler("test")
+
+    try:
+        raise ValueError("Test exception")
+    except ValueError:
+        exc_info = sys.exc_info()
+
+    record = logging.LogRecord(
+        name="test.module",
+        level=logging.ERROR,
+        pathname="/path/to/file.py",
+        lineno=42,
+        msg="Error occurred",
+        args=(),
+        exc_info=exc_info,
+        func="test_function",
+    )
+    record.module = "test_module"
+
+    handler.emit(record)
+
+    mock_structlog_logger.error.assert_called_once_with(
+        "Error occurred",
+        logger_name="test.module",
+        module="test_module",
+        func_name="test_function",
+        lineno=42,
+        exc_info=exc_info,
+    )
+
+
+def test_structlog_handler_emit_excludes_exception_info_when_not_present(mocker):
+    mock_structlog_logger = MagicMock()
+    mocker.patch("structlog.get_logger", return_value=mock_structlog_logger)
+
+    handler = StructlogHandler("test")
+
+    record = logging.LogRecord(
+        name="test.module",
+        level=logging.ERROR,
+        pathname="/path/to/file.py",
+        lineno=42,
+        msg="Error without exception",
+        args=(),
+        exc_info=None,
+        func="test_function",
+    )
+    record.module = "test_module"
+
+    handler.emit(record)
+
+    mock_structlog_logger.error.assert_called_once_with(
+        "Error without exception",
+        logger_name="test.module",
+        module="test_module",
+        func_name="test_function",
+        lineno=42,
+    )
+
+
+def test_structlog_handler_emit_handles_exc_info_with_different_log_levels(mocker):
+    mock_structlog_logger = MagicMock()
+    mocker.patch("structlog.get_logger", return_value=mock_structlog_logger)
+
+    handler = StructlogHandler("test")
+
+    try:
+        raise RuntimeError("Runtime error")
+    except RuntimeError:
+        exc_info = sys.exc_info()
+
+    record = logging.LogRecord(
+        name="test.module",
+        level=logging.CRITICAL,
+        pathname="/path/to/file.py",
+        lineno=123,
+        msg="Critical error with exception",
+        args=(),
+        exc_info=exc_info,
+        func="critical_function",
+    )
+    record.module = "critical_module"
+
+    handler.emit(record)
+
+    mock_structlog_logger.critical.assert_called_once_with(
+        "Critical error with exception",
+        logger_name="test.module",
+        module="critical_module",
+        func_name="critical_function",
+        lineno=123,
+        exc_info=exc_info,
+    )

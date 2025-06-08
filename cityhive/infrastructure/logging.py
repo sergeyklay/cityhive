@@ -177,3 +177,57 @@ def bind_request_context(**kwargs: Any) -> None:
 def clear_request_context() -> None:
     """Clear request-specific logging context."""
     structlog.contextvars.clear_contextvars()
+
+
+class StructlogHandler(logging.Handler):
+    """
+    Custom logging handler that routes standard library logs to structlog.
+
+    This allows third-party libraries (like Alembic, SQLAlchemy) that use
+    standard Python logging to integrate with our structured logging system.
+    """
+
+    def __init__(self, logger_name: str = "third_party"):
+        super().__init__()
+        self.structlog_logger = structlog.get_logger(logger_name)
+
+    def emit(self, record: logging.LogRecord) -> None:
+        """Convert stdlib log record to structured log entry."""
+        level_name = record.levelname.lower()
+        log_method = getattr(
+            self.structlog_logger, level_name, self.structlog_logger.info
+        )
+
+        log_kwargs = {
+            "logger_name": record.name,
+            "module": getattr(record, "module", "unknown"),
+            "func_name": record.funcName,
+            "lineno": record.lineno,
+        }
+
+        # Include exception information if present
+        if record.exc_info:
+            log_kwargs["exc_info"] = record.exc_info
+
+        log_method(record.getMessage(), **log_kwargs)
+
+
+def configure_third_party_loggers(
+    *logger_names: str, level: int = logging.INFO
+) -> None:
+    """
+    Configure third-party loggers to use structured logging.
+
+    Args:
+        *logger_names: Names of loggers to configure
+            (e.g., 'alembic', 'sqlalchemy.engine')
+        level: Log level to set for these loggers
+    """
+    handler = StructlogHandler("third_party")
+
+    for logger_name in logger_names:
+        logger = logging.getLogger(logger_name)
+        logger.handlers.clear()
+        logger.addHandler(handler)
+        logger.setLevel(level)
+        logger.propagate = False
