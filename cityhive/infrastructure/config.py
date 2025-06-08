@@ -43,11 +43,35 @@ class Config(BaseSettings):
         description="Maximum number of permanent connections in the pool",
     )
 
-    db_pool_overflow: int = Field(
+    db_max_overflow: int = Field(
         default=10,
         ge=0,
         le=100,
         description="Maximum number of overflow connections allowed",
+    )
+
+    db_pool_timeout: int = Field(
+        default=30,
+        ge=1,
+        le=300,
+        description="Seconds to wait before timing out on pool get",
+    )
+
+    db_pool_recycle: int = Field(
+        default=1800,
+        ge=60,
+        le=3600,
+        description="Seconds to recycle connections after",
+    )
+
+    db_pool_pre_ping: bool = Field(
+        default=True,
+        description="Check connection health before using",
+    )
+
+    db_echo: bool = Field(
+        default=False,
+        description="Enable SQL logging in debug mode",
     )
 
     app_host: str = Field(

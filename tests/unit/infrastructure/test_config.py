@@ -28,7 +28,7 @@ def test_base_config_default_values():
     assert config.debug is False
     assert str(config.database_uri).startswith("postgresql+asyncpg://")
     assert config.db_pool_size == 5
-    assert config.db_pool_overflow == 10
+    assert config.db_max_overflow == 10
     assert config.app_host == "0.0.0.0"
     assert config.app_port == 8080
 
@@ -126,7 +126,7 @@ def test_production_config_defaults():
         assert config.app_host == "0.0.0.0"
         assert config.app_port == 8080
         assert config.db_pool_size == 5
-        assert config.db_pool_overflow == 10
+        assert config.db_max_overflow == 10
 
 
 def test_production_config_requires_database_uri_env():
@@ -171,7 +171,7 @@ def test_testing_config_defaults():
     assert config.is_testing is True
     assert config.app_port == 8080
     assert config.db_pool_size == 5
-    assert config.db_pool_overflow == 10
+    assert config.db_max_overflow == 10
 
 
 def test_testing_config_database_uri():
@@ -272,7 +272,7 @@ def test_config_reads_from_environment():
         "APP_HOST": "env-host",
         "APP_PORT": "9876",
         "DB_POOL_SIZE": "15",
-        "DB_POOL_OVERFLOW": "25",
+        "DB_MAX_OVERFLOW": "25",
     }
 
     with patch.dict(os.environ, env_vars):
@@ -284,7 +284,7 @@ def test_config_reads_from_environment():
         assert config.app_host == "env-host"
         assert config.app_port == 9876
         assert config.db_pool_size == 15
-        assert config.db_pool_overflow == 25
+        assert config.db_max_overflow == 25
 
 
 def test_config_validation_with_invalid_env_values():

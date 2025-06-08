@@ -23,8 +23,11 @@ async def pg_context(app: web.Application) -> AsyncGenerator[None, None]:
     engine: AsyncEngine = create_async_engine(
         str(config.database_uri),
         pool_size=config.db_pool_size,
-        max_overflow=config.db_pool_overflow,
-        echo=config.debug,  # Enable SQL logging in debug mode
+        max_overflow=config.db_max_overflow,
+        pool_timeout=config.db_pool_timeout,
+        pool_recycle=config.db_pool_recycle,
+        pool_pre_ping=config.db_pool_pre_ping,
+        echo=config.db_echo,
     )
 
     app[db_key] = async_sessionmaker(engine, expire_on_commit=False)
