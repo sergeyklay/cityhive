@@ -83,6 +83,72 @@ async def test_inspection(aiohttp_client):
     # Test logic...
 ```
 
+### Test Performance and Resource Management
+
+**Choose appropriate testing strategy for performance and reliability:**
+
+- **Unit Tests**: Direct function calls for validation and business logic
+  - Use `make_mocked_request` from `aiohttp.test_utils`
+  - No HTTP infrastructure, no resource leaks
+  - Execution: ~0.25 seconds for 42 tests
+  - Perfect for validation logic, error handling, data transformation
+
+- **Integration Tests**: Full HTTP cycle for critical user journeys
+  - Use `aiohttp_client` sparingly for end-to-end validation
+  - Test middleware, routing, and complete request pipeline
+  - Slower execution but validates real user experience
+
+```python
+# ✅ DO: Fast unit testing for validation logic
+async def test_email_validation_rejects_invalid_format():
+    data = {"name": "John", "email": "invalid-email"}
+    request = make_mocked_request("POST", "/api/users")
+    request.json = AsyncMock(return_value=data)
+
+    response = await create_user(request)
+    assert response.status == 400
+
+# ✅ DO: Integration testing for critical paths only
+async def test_complete_user_registration_workflow(aiohttp_client, app_with_db):
+    client = await aiohttp_client(app_with_db)
+    response = await client.post("/api/users", json=valid_user_data)
+    assert response.status == 201
+
+# ❌ DON'T: Use integration tests for simple validation
+async def test_validation_logic(aiohttp_client):  # Unnecessary overhead
+    app = web.Application()
+    client = await aiohttp_client(app)  # Creates test server
+    # This is unit testing disguised as integration testing
+```
+
+### Resource Leak Prevention
+
+**Prevent "Too many open files" and DNS resolver warnings:**
+
+- **Avoid networking in unit tests**: Eliminates resource leaks and DNS warnings
+- **Use direct function calls**: Test view functions without HTTP infrastructure
+- **Mock external dependencies**: Prevent real network calls in tests
+
+```python
+# ✅ DO: Resource-safe unit testing
+from aiohttp.test_utils import make_mocked_request
+from unittest.mock import AsyncMock
+
+async def test_user_creation_without_networking():
+    # No HTTP server, no networking, no resource leaks
+    request = make_mocked_request("POST", "/api/users", app=app_with_db)
+    request.json = AsyncMock(return_value=user_data)
+
+    response = await create_user(request)
+    assert response.status == 201
+
+# ❌ DON'T: Create HTTP infrastructure for unit tests
+async def test_user_creation_with_overhead(aiohttp_client):
+    app = web.Application()  # Unnecessary overhead
+    client = await aiohttp_client(app)  # Can cause resource leaks
+    response = await client.post("/api/users", json=user_data)
+```
+
 ### Fixture Organization
 
 Follow "Local when possible, shared when necessary" principle:
