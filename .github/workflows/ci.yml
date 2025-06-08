@@ -94,12 +94,13 @@ jobs:
             fi
           done
           echo "PostgreSQL is ready"
-          docker compose logs cityhive_db
-          docker inspect cityhive_db
-          # Verify test database exists and has PostGIS enabled
-          echo "Verifying test database setup..."
-          docker compose exec -T cityhive_db psql -U cityhive -d cityhive_test -c "SELECT version();"
-          docker compose exec -T cityhive_db psql -U cityhive -d cityhive_test -c "SELECT PostGIS_Version();"
+        env:
+          POSTGRES_DB: cityhive_test
+
+      - name: Verify test database setup
+        run: |
+          docker compose exec -T cityhive_db psql -U cityhive -d $POSTGRES_DB -c "SELECT version();"
+          docker compose exec -T cityhive_db psql -U cityhive -d $POSTGRES_DB -c "SELECT PostGIS_Version();"
         env:
           POSTGRES_DB: cityhive_test
 
