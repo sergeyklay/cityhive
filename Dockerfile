@@ -41,6 +41,11 @@ RUN uv venv /opt/venv \
 ## Production stage
 FROM base AS production
 
+# Add standard OCI labels
+LABEL org.opencontainers.image.source="https://github.com/sergeyklay/cityhive" \
+    org.opencontainers.image.description="Experimental aiohttp microservice for urban beehive management and technology exploration." \
+    org.opencontainers.image.licenses=MIT
+
 # Install runtime dependencies only
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq5 \
