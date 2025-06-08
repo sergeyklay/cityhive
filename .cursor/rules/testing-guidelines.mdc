@@ -1,6 +1,6 @@
 ---
 description: Testing Guidelines
-globs: tests/**/*.py
+globs: **/tests/**/*.py
 alwaysApply: false
 ---
 # Testing Guidelines
@@ -186,7 +186,7 @@ async def test_endpoint_failure(client_with_db):
   - Use `make_mocked_request` from `aiohttp.test_utils`
   - Call view functions directly: `await create_user(request)`
   - No networking, no DNS resolution, no resource leaks
-  - Faster execution (0.25s vs several seconds)
+  - Always prefer strategies with faster execution
 
 - **Integration Tests**: Test full HTTP request/response cycle
   - Use `aiohttp_client` for real HTTP testing
