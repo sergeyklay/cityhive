@@ -5,57 +5,106 @@ These views handle REST API endpoints and return JSON responses.
 All API views should follow REST conventions and proper HTTP status codes.
 """
 
+from aiohttp import web
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from cityhive.domain.services.user import UserRegistrationData, UserService
 from cityhive.infrastructure.logging import get_logger
+from cityhive.infrastructure.typedefs import db_key
 
 logger = get_logger(__name__)
 
-# Future API views will be implemented here
-# Example structure:
 
-# async def list_users(request: web.Request) -> web.Response:
-#     """List all users API endpoint."""
-#     try:
-#         async with request.app[db_key]() as session:
-#             session: AsyncSession
-#             # Fetch users from database
-#             # users = await get_all_users(session)
-#             return web.json_response({"users": []})
-#     except Exception:
-#         logger.exception("Error listing users")
-#         return web.json_response(
-#             {"error": "Internal server error"}, status=500
-#         )
+async def create_user(request: web.Request) -> web.Response:
+    """
+    Register a new beekeeper user.
 
-# async def create_user(request: web.Request) -> web.Response:
-#     """Create a new user API endpoint."""
-#     try:
-#         data = await request.json()
-#         async with request.app[db_key]() as session:
-#             session: AsyncSession
-#             # Create user in database
-#             # user = await create_new_user(session, data)
-#             return web.json_response({"user": {}}, status=201)
-#     except Exception:
-#         logger.exception("Error creating user")
-#         return web.json_response(
-#             {"error": "Internal server error"}, status=500
-#         )
+    Expected JSON payload:
+    {
+        "name": "Beekeeper Name",
+        "email": "beekeeper@example.com"
+    }
 
-# async def get_user(request: web.Request) -> web.Response:
-#     """Get user by ID API endpoint."""
-#     try:
-#         user_id = request.match_info["user_id"]
-#         async with request.app[db_key]() as session:
-#             session: AsyncSession
-#             # Fetch user from database
-#             # user = await get_user_by_id(session, user_id)
-#             if not user:
-#                 return web.json_response(
-#                     {"error": "User not found"}, status=404
-#                 )
-#             return web.json_response({"user": {}})
-#     except Exception:
-#         logger.exception("Error getting user")
-#         return web.json_response(
-#             {"error": "Internal server error"}, status=500
-#         )
+    Returns:
+    - 201: User created successfully with API key
+    - 400: Invalid request data
+    - 409: User already exists
+    - 500: Internal server error
+    """
+    try:
+        # Parse and validate JSON request data
+        try:
+            data = await request.json()
+        except Exception:
+            logger.warning("Invalid JSON in user registration request")
+            return web.json_response({"error": "Invalid JSON format"}, status=400)
+
+        # Validate required fields
+        name = data.get("name", "").strip()
+        email = data.get("email", "").strip().lower()
+
+        if not name:
+            return web.json_response({"error": "Name is required"}, status=400)
+
+        if not email:
+            return web.json_response({"error": "Email is required"}, status=400)
+
+        # Basic email validation
+        email_parts = email.split("@")
+        if (
+            len(email_parts) != 2
+            or not email_parts[0]
+            or not email_parts[1]
+            or "." not in email_parts[1]
+        ):
+            return web.json_response({"error": "Invalid email format"}, status=400)
+
+        # Create registration data
+        registration_data = UserRegistrationData(name=name, email=email)
+
+        # Register user through domain service
+        async with request.app[db_key]() as session:
+            session: AsyncSession
+            user_service = UserService()
+            result = await user_service.register_beekeeper(session, registration_data)
+
+            if result.success and result.user:
+                logger.info(
+                    "Beekeeper registration API success",
+                    user_id=result.user.id,
+                    email=result.user.email,
+                )
+
+                return web.json_response(
+                    {
+                        "success": True,
+                        "user": {
+                            "id": result.user.id,
+                            "name": result.user.name,
+                            "email": result.user.email,
+                            "api_key": str(result.user.api_key),
+                            "registered_at": result.user.registered_at.isoformat(),
+                        },
+                    },
+                    status=201,
+                )
+
+            # Determine appropriate HTTP status code
+            if result.error_message and "already exists" in result.error_message:
+                status_code = 409
+            else:
+                status_code = 400
+
+            logger.warning(
+                "Beekeeper registration failed",
+                email=email,
+                error=result.error_message,
+            )
+
+            return web.json_response(
+                {"success": False, "error": result.error_message}, status=status_code
+            )
+
+    except Exception:
+        logger.exception("Unexpected error in user registration API")
+        return web.json_response({"error": "Internal server error"}, status=500)
