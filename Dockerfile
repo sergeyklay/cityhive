@@ -20,10 +20,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 ## Builder stage
 FROM base AS builder
 
+# Copy uv from the official distroless image
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
 ENV UV_LINK_MODE=copy \
     VIRTUAL_ENV=/opt/venv
-
-RUN pip install uv
 
 COPY pyproject.toml uv.lock ./
 
