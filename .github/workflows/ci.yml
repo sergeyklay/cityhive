@@ -94,6 +94,8 @@ jobs:
             fi
           done
           echo "PostgreSQL is ready"
+          docker compose logs cityhive_db
+          docker inspect cityhive_db
         env:
           POSTGRES_DB: cityhive_test
 
