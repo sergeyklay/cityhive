@@ -59,3 +59,6 @@ alwaysApply: true
 **See also:**
 - [python-standards.mdc](mdc:.cursor/rules/python-standards.mdc) for coding conventions
 - [testing-guidelines.mdc](mdc:.cursor/rules/testing-guidelines.mdc) for test practices
+- [Development Guide](mdc:docs/development.md) for setup and workflows
+- [Architecture Guide](mdc:docs/architecture.md) for detailed design patterns
+- [Coding Standards](mdc:docs/coding-standards.md) for comprehensive style guide

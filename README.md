@@ -5,58 +5,7 @@
 
 **An experimental aiohttp microservice for urban beehive management and technology exploration.**
 
-CityHive is a synthetic yet realistic sandbox project designed to explore modern Python web development patterns, architectural approaches, and DevOps practices. While grounded in the domain of urban beehive management (featuring sensor data ingestion, inspection scheduling, harvest tracking, and spatial analytics), this project serves as a comprehensive technology playground rather than a production application.
-
-## Project Focus
-
-This project serves as an experimental playground for:
-
-- **Architectural Patterns**: Clean architecture, domain-driven design, dependency injection
-- **Async Development**: aiohttp web framework, asyncpg database drivers, SQLAlchemy async ORM
-- **Modern Tooling**: uv package management, ruff linting, AI-assisted development
-- **DevOps Practices**: Docker containerization, GitHub Actions CI/CD, automated testing
-- **Code Quality**: Comprehensive testing with pytest, coverage tracking, type safety
-
-## Technology Stack
-
-### Core Framework
-- **Python 3.12** with **aiohttp** web framework
-- **PostgreSQL + PostGIS** for spatial data with **SQLAlchemy** async ORM
-- **Jinja2** templates and **Pydantic** validation
-
-### Development Tools
-- **uv**: Ultra-fast Python package manager
-- **ruff**: Lightning-fast linting and formatting
-- **pytest**: Comprehensive testing with async support
-- **Docker**: Containerized development environment
-
-## Architecture
-
-Clean architecture with strict layer separation:
-
-```
-cityhive/
-├── cityhive/
-├── cityhive/                 # Main application package
-│   ├── app/                  # Web layer (aiohttp routes, middleware, views)
-│   │   ├── routes/           # Route definitions organized by functionality
-│   │   ├── views/            # View handlers organized by functionality
-│   │   └── middlewares.py    # Request/response middleware
-│   ├── domain/               # Business logic and domain models
-│   ├── infrastructure/       # External integrations and database
-│   ├── static/               # Static assets
-│   └── templates/            # Jinja2 templates
-├── tests/                    # Test suites
-│   ├── unit/                 # Unit tests
-│   └── integration/          # Integration tests
-├── migration/                # Alembic database migrations
-├── scripts/                  # Utility scripts
-├── .cursor/                  # Cursor AI configuration
-│   ├── mcp.json              # MCP server configuration
-│   └── postgres.py           # Custom PostgreSQL MCP server
-├── .github/                  # GitHub Actions workflows
-└── docker-compose.yml        # Development environment
-```
+CityHive is a synthetic yet realistic sandbox project designed to explore modern Python web development patterns, architectural approaches, and DevOps practices. While grounded in the domain of urban beehive management, this project serves as a comprehensive technology playground rather than a production application.
 
 ## Quick Start
 
@@ -64,9 +13,9 @@ cityhive/
 - Python 3.12+
 - Docker and Docker Compose
 
-### Getting Started
+### Get Started in 3 Steps
 
-1. **Clone and setup**
+1. **Clone and setup dependencies**
    ```bash
    git clone https://github.com/sergeyklay/cityhive.git
    cd cityhive
@@ -78,40 +27,52 @@ cityhive/
    docker compose up --build
    ```
 
-3. **Verify installation**
+3. **Verify everything works**
    ```bash
    make test
    ```
 
-## Development
+The application will be available at `http://localhost:8080`.
 
-### Essential Commands
+## Project Focus
+
+This project serves as an experimental playground for:
+
+- **Clean Architecture**: Domain-driven design with strict layer separation
+- **Async Python**: Modern aiohttp web framework with SQLAlchemy async ORM
+- **Developer Experience**: AI-assisted development, comprehensive tooling
+- **Production Practices**: Docker, CI/CD, monitoring, comprehensive testing
+
+## Essential Commands
+
 ```bash
-make format         # Format code
-make lint           # Run linter
-make test           # Run tests with coverage
-make migrate        # Run database migrations
+make test           # Run all tests with coverage
+make format         # Format code with ruff
+make lint           # Run linter checks
+make migrate        # Apply database migrations
 ```
-
-### AI Integration
-- **Cursor AI**: Pre-configured development rules and patterns
-- **MCP Server**: Direct database querying through AI interface
-- **Smart Completion**: Context-aware code suggestions
-
-## Project Metrics
-
-- **Test Coverage**: Maintained above 90%
-- **Code Quality**: Enforced with ruff and comprehensive type hints
-- **CI/CD**: Full automation with GitHub Actions
-- **Dependencies**: Automatically updated via Dependabot
 
 ## Documentation
 
-- [Logging](./docs/logging.md)
+📖 **Comprehensive guides available in the `docs/` folder:**
+
+- **[Development Guide](./docs/development.md)** - Setup, workflows, testing, and best practices
+- **[Architecture](./docs/architecture.md)** - Clean architecture principles, layer separation, and design patterns
+- **[Technology Stack](./docs/technology-stack.md)** - Detailed technology choices and rationale
+- **[Coding Standards](./docs/coding-standards.md)** - Code style, naming conventions, and best practices
+- **[AI Integration](./docs/ai-integration.md)** - Cursor AI setup, MCP server, and AI-assisted development
+- **[Logging](./docs/logging.md)** - Structured logging with JSON output
+
+## Key Technologies
+
+- **Python 3.12** with **aiohttp** web framework
+- **PostgreSQL + PostGIS** with **SQLAlchemy** async ORM
+- **Docker** containerization and **uv** package management
+- **Pytest** testing with **ruff** linting and formatting
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development guidelines and contribution process.
 
 ## License
 

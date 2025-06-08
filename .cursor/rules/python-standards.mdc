@@ -201,7 +201,9 @@ logger = get_logger(__name__)
 ---
 
 **Reference Implementation:**
-- See existing codebase for patterns
-- Structured logging documentation in [docs/logging.md](mdc:docs/logging.md)
-- Ruff configuration in [pyproject.toml](mdc:pyproject.toml)
+- [Logging Guide](mdc:docs/logging.md) for structured logging patterns
+- [Architecture Guide](mdc:docs/architecture.md) for clean architecture patterns
+- [Development Guide](mdc:docs/development.md) for tooling and workflows
+- [Testing Guidelines](mdc:.cursor/rules/testing-guidelines.mdc) for test patterns
+- [Ruff configuration](mdc:pyproject.toml) for linting rules
 - Use Context7 for framework-specific patterns

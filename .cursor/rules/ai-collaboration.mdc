@@ -72,4 +72,10 @@ alwaysApply: true
 
 ---
 
+**See also:**
+- [AI Integration Guide](mdc:docs/ai-integration.md) for MCP setup and AI tooling
+- [Architecture Guide](mdc:docs/architecture.md) for clean architecture patterns
+- [CONTRIBUTING.md](mdc:CONTRIBUTING.md) for code review and contribution process
+- [Development Guide](mdc:docs/development.md) for commands and workflows
+
 **Key Principle:** Be helpful by understanding the codebase deeply and making targeted, high-quality contributions that fit seamlessly into the existing architecture and patterns.
