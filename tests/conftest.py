@@ -17,8 +17,12 @@ from cityhive.infrastructure.typedefs import db_key
 @pytest.fixture(autouse=True)
 def isolate_env_and_dotenv():
     """Ensure complete test isolation from .env files and system environment."""
+    # Preserve APP_ENV if set (needed for CI integration tests)
+    app_env = os.environ.get("APP_ENV")
+    env_patch = {} if app_env is None else {"APP_ENV": app_env}
+
     with (
-        patch.dict(os.environ, {}, clear=True),
+        patch.dict(os.environ, env_patch, clear=True),
         patch.multiple(
             Config,
             model_config=SettingsConfigDict(env_file=None, env_ignore_empty=True),
