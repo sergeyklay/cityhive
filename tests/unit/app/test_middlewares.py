@@ -1,9 +1,4 @@
-"""
-Unit tests for cityhive.app.middlewares module.
-
-Tests middleware functionality including error handling, logging,
-and request/response processing following aiohttp patterns.
-"""
+"""Unit tests for cityhive.app.middlewares module."""
 
 import logging
 from unittest.mock import AsyncMock, patch

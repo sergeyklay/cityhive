@@ -1,5 +1,5 @@
 ## Base Image
-FROM python:3.12-slim AS base
+FROM public.ecr.aws/docker/library/python:3.12-slim AS base
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
@@ -20,10 +20,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 ## Builder stage
 FROM base AS builder
 
+# Copy uv from the official distroless image
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
 ENV UV_LINK_MODE=copy \
     VIRTUAL_ENV=/opt/venv
-
-RUN pip install uv
 
 COPY pyproject.toml uv.lock ./
 
@@ -39,6 +40,11 @@ RUN uv venv /opt/venv \
 
 ## Production stage
 FROM base AS production
+
+# Add standard OCI labels
+LABEL org.opencontainers.image.source="https://github.com/sergeyklay/cityhive" \
+    org.opencontainers.image.description="Experimental aiohttp microservice for urban beehive management and technology exploration." \
+    org.opencontainers.image.licenses=MIT
 
 # Install runtime dependencies only
 RUN apt-get update && apt-get install -y --no-install-recommends \
