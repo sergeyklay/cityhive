@@ -5,11 +5,21 @@ These views handle REST API endpoints and return JSON responses.
 All API views should follow REST conventions and proper HTTP status codes.
 """
 
-import json
-
 from aiohttp import web
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from cityhive.app.helpers.request import (
+    create_error_response,
+    create_success_response,
+    parse_json_request,
+)
+from cityhive.app.helpers.validation import (
+    get_normalized_email,
+    sanitize_email_field,
+    sanitize_string_field,
+    validate_email,
+    validate_required_field,
+)
 from cityhive.domain.services.user import (
     UserRegistrationData,
     UserRegistrationErrorType,
@@ -38,35 +48,45 @@ async def create_user(request: web.Request) -> web.Response:
     - 500: Internal server error
     """
     try:
-        # Parse and validate JSON request data
-        try:
-            data = await request.json()
-        except json.JSONDecodeError:
-            logger.warning("Invalid JSON in user registration request")
-            return web.json_response({"error": "Invalid JSON format"}, status=400)
+        # Parse JSON request with proper error handling
+        data, parse_error = await parse_json_request(request)
+        if parse_error:
+            return create_error_response(parse_error, 400)
+
+        # Ensure data is not None after successful parsing
+        assert data is not None
+
+        # Sanitize input fields
+        name = sanitize_string_field(data.get("name"))
+        email = sanitize_email_field(data.get("email"))
 
         # Validate required fields
-        name = data.get("name", "").strip()
-        email = data.get("email", "").strip().lower()
+        name_validation = validate_required_field(name, "Name")
+        if not name_validation.is_valid:
+            return create_error_response(
+                name_validation.error_message or "Name validation failed", 400
+            )
 
-        if not name:
-            return web.json_response({"error": "Name is required"}, status=400)
+        email_validation = validate_required_field(email, "Email")
+        if not email_validation.is_valid:
+            return create_error_response(
+                email_validation.error_message or "Email validation failed", 400
+            )
 
-        if not email:
-            return web.json_response({"error": "Email is required"}, status=400)
+        # Validate email format
+        email_format_validation = validate_email(email)
+        if not email_format_validation.is_valid:
+            return create_error_response(
+                email_format_validation.error_message or "Email format invalid", 400
+            )
 
-        # Basic email validation
-        email_parts = email.split("@")
-        if (
-            len(email_parts) != 2
-            or not email_parts[0]
-            or not email_parts[1]
-            or "." not in email_parts[1]
-        ):
-            return web.json_response({"error": "Invalid email format"}, status=400)
+        # Get normalized email for storage consistency
+        normalized_email = get_normalized_email(email)
+        if normalized_email is None:
+            return create_error_response("Invalid email format", 400)
 
-        # Create registration data
-        registration_data = UserRegistrationData(name=name, email=email)
+        # Create registration data with normalized email
+        registration_data = UserRegistrationData(name=name, email=normalized_email)
 
         # Register user through domain service
         async with request.app[db_key]() as session:
@@ -81,9 +101,8 @@ async def create_user(request: web.Request) -> web.Response:
                     email=result.user.email,
                 )
 
-                return web.json_response(
+                return create_success_response(
                     {
-                        "success": True,
                         "user": {
                             "id": result.user.id,
                             "name": result.user.name,
@@ -113,10 +132,10 @@ async def create_user(request: web.Request) -> web.Response:
                 error=result.error_message,
             )
 
-            return web.json_response(
-                {"success": False, "error": result.error_message}, status=status_code
+            return create_error_response(
+                result.error_message or "Registration failed", status_code
             )
 
     except Exception:
         logger.exception("Unexpected error in user registration API")
-        return web.json_response({"error": "Internal server error"}, status=500)
+        return create_error_response("Internal server error", 500)

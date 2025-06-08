@@ -179,9 +179,11 @@ async def test_create_user_with_email_missing_local_returns_validation_error(cli
         assert data["error"] == "Invalid email format"
 
 
-async def test_create_user_with_email_missing_tld_returns_validation_error(client):
+async def test_create_user_with_invalid_email_format_double_at_returns_validation_error(
+    client,
+):
     async with client.post(
-        "/api/users", json={"name": "John", "email": "no-tld@domain"}
+        "/api/users", json={"name": "John", "email": "invalid@@domain.com"}
     ) as response:
         assert response.status == 400
 

@@ -12,6 +12,7 @@ The project includes Cursor AI configuration in the `.cursor/rules/` directory w
 - `cursor-rules.mdc`: Cursor-specific development rules
 - `dependency-management.mdc`: Package management guidelines
 - `project-overview.mdc`: Project structure and overview
+- `project-patterns.mdc`: Project patterns
 - `python-standards.mdc`: Python coding standards
 - `testing-guidelines.mdc`: Test writing best practices
 
