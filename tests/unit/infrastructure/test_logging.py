@@ -457,3 +457,102 @@ def test_configure_third_party_loggers_configures_multiple_loggers_correctly():
         assert test_logger.propagate is False
         assert len(test_logger.handlers) == 1
         assert isinstance(test_logger.handlers[0], StructlogHandler)
+
+
+def test_structlog_handler_emit_includes_exception_info_when_present(mocker):
+    mock_structlog_logger = MagicMock()
+    mocker.patch("structlog.get_logger", return_value=mock_structlog_logger)
+
+    handler = StructlogHandler("test")
+
+    try:
+        raise ValueError("Test exception")
+    except ValueError:
+        exc_info = sys.exc_info()
+
+    record = logging.LogRecord(
+        name="test.module",
+        level=logging.ERROR,
+        pathname="/path/to/file.py",
+        lineno=42,
+        msg="Error occurred",
+        args=(),
+        exc_info=exc_info,
+        func="test_function",
+    )
+    record.module = "test_module"
+
+    handler.emit(record)
+
+    mock_structlog_logger.error.assert_called_once_with(
+        "Error occurred",
+        logger_name="test.module",
+        module="test_module",
+        func_name="test_function",
+        lineno=42,
+        exc_info=exc_info,
+    )
+
+
+def test_structlog_handler_emit_excludes_exception_info_when_not_present(mocker):
+    mock_structlog_logger = MagicMock()
+    mocker.patch("structlog.get_logger", return_value=mock_structlog_logger)
+
+    handler = StructlogHandler("test")
+
+    record = logging.LogRecord(
+        name="test.module",
+        level=logging.ERROR,
+        pathname="/path/to/file.py",
+        lineno=42,
+        msg="Error without exception",
+        args=(),
+        exc_info=None,
+        func="test_function",
+    )
+    record.module = "test_module"
+
+    handler.emit(record)
+
+    mock_structlog_logger.error.assert_called_once_with(
+        "Error without exception",
+        logger_name="test.module",
+        module="test_module",
+        func_name="test_function",
+        lineno=42,
+    )
+
+
+def test_structlog_handler_emit_handles_exc_info_with_different_log_levels(mocker):
+    mock_structlog_logger = MagicMock()
+    mocker.patch("structlog.get_logger", return_value=mock_structlog_logger)
+
+    handler = StructlogHandler("test")
+
+    try:
+        raise RuntimeError("Runtime error")
+    except RuntimeError:
+        exc_info = sys.exc_info()
+
+    record = logging.LogRecord(
+        name="test.module",
+        level=logging.CRITICAL,
+        pathname="/path/to/file.py",
+        lineno=123,
+        msg="Critical error with exception",
+        args=(),
+        exc_info=exc_info,
+        func="critical_function",
+    )
+    record.module = "critical_module"
+
+    handler.emit(record)
+
+    mock_structlog_logger.critical.assert_called_once_with(
+        "Critical error with exception",
+        logger_name="test.module",
+        module="critical_module",
+        func_name="critical_function",
+        lineno=123,
+        exc_info=exc_info,
+    )

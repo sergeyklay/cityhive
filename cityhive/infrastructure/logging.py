@@ -198,13 +198,18 @@ class StructlogHandler(logging.Handler):
             self.structlog_logger, level_name, self.structlog_logger.info
         )
 
-        log_method(
-            record.getMessage(),
-            logger_name=record.name,
-            module=getattr(record, "module", "unknown"),
-            func_name=record.funcName,
-            lineno=record.lineno,
-        )
+        log_kwargs = {
+            "logger_name": record.name,
+            "module": getattr(record, "module", "unknown"),
+            "func_name": record.funcName,
+            "lineno": record.lineno,
+        }
+
+        # Include exception information if present
+        if record.exc_info:
+            log_kwargs["exc_info"] = record.exc_info
+
+        log_method(record.getMessage(), **log_kwargs)
 
 
 def configure_third_party_loggers(
