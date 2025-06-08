@@ -94,11 +94,8 @@ jobs:
             fi
           done
           echo "PostgreSQL is ready"
-
-      - name: Create test database
-        run: |
-          docker compose exec -T cityhive_db psql -U cityhive -d cityhive -c "CREATE DATABASE cityhive_test;"
-          echo "Test database created"
+        env:
+          APP_ENV: testing
 
       - name: Run database migrations
         run: make migrate
