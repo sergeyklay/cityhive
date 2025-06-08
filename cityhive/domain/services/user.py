@@ -5,6 +5,7 @@ Business logic for user operations including registration and management.
 """
 
 from dataclasses import dataclass
+from enum import Enum
 
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
@@ -14,6 +15,15 @@ from cityhive.domain.models import User
 from cityhive.infrastructure.logging import get_logger
 
 logger = get_logger(__name__)
+
+
+class UserRegistrationErrorType(Enum):
+    """Enumeration of user registration error types."""
+
+    USER_EXISTS = "user_exists"
+    DATABASE_ERROR = "database_error"
+    INTEGRITY_VIOLATION = "integrity_violation"
+    UNKNOWN_ERROR = "unknown_error"
 
 
 @dataclass
@@ -30,6 +40,7 @@ class UserRegistrationResult:
 
     success: bool
     user: User | None = None
+    error_type: UserRegistrationErrorType | None = None
     error_message: str | None = None
 
 
@@ -47,7 +58,7 @@ class UserService:
             registration_data: User registration information
 
         Returns:
-            UserRegistrationResult with success status and user data or error
+            UserRegistrationResult with success status and user data or structured error
         """
         logger.info(
             "Starting user registration",
@@ -66,7 +77,9 @@ class UserService:
                     email=registration_data.email,
                 )
                 return UserRegistrationResult(
-                    success=False, error_message="User with this email already exists"
+                    success=False,
+                    error_type=UserRegistrationErrorType.USER_EXISTS,
+                    error_message="User with this email already exists",
                 )
 
             # Create new user with auto-generated API key
@@ -95,7 +108,9 @@ class UserService:
                 error=str(e),
             )
             return UserRegistrationResult(
-                success=False, error_message="Registration failed due to data conflict"
+                success=False,
+                error_type=UserRegistrationErrorType.INTEGRITY_VIOLATION,
+                error_message="Registration failed due to data conflict",
             )
 
         except Exception as e:
@@ -106,7 +121,9 @@ class UserService:
                 error_type=type(e).__name__,
             )
             return UserRegistrationResult(
-                success=False, error_message="Internal server error during registration"
+                success=False,
+                error_type=UserRegistrationErrorType.UNKNOWN_ERROR,
+                error_message="Internal server error during registration",
             )
 
     async def _get_user_by_email(

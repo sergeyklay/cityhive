@@ -10,7 +10,11 @@ import json
 from aiohttp import web
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from cityhive.domain.services.user import UserRegistrationData, UserService
+from cityhive.domain.services.user import (
+    UserRegistrationData,
+    UserRegistrationErrorType,
+    UserService,
+)
 from cityhive.infrastructure.logging import get_logger
 from cityhive.infrastructure.typedefs import db_key
 
@@ -91,20 +95,21 @@ async def create_user(request: web.Request) -> web.Response:
                     status=201,
                 )
 
-            # Determine appropriate HTTP status code
-            if result.error_message and "already exists" in result.error_message:
+            # Determine appropriate HTTP status code based on structured error type
+            status_code = 400  # Default to client error
+            if result.error_type == UserRegistrationErrorType.USER_EXISTS:
                 status_code = 409
-            elif result.error_message and (
-                "connection" in result.error_message.lower()
-                or "database" in result.error_message.lower()
+            elif result.error_type in (
+                UserRegistrationErrorType.DATABASE_ERROR,
+                UserRegistrationErrorType.INTEGRITY_VIOLATION,
+                UserRegistrationErrorType.UNKNOWN_ERROR,
             ):
                 status_code = 500
-            else:
-                status_code = 400
 
             logger.warning(
                 "User registration failed",
                 email=email,
+                error_type=result.error_type.value if result.error_type else None,
                 error=result.error_message,
             )
 

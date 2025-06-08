@@ -13,6 +13,7 @@ from aiohttp import web
 from cityhive.app.views.api import create_user
 from cityhive.domain.models import User
 from cityhive.domain.services.user import (
+    UserRegistrationErrorType,
     UserRegistrationResult,
 )
 from cityhive.infrastructure.typedefs import db_key
@@ -262,7 +263,9 @@ async def test_create_user_with_email_missing_tld_returns_validation_error(
 
 async def test_create_user_with_existing_email_returns_conflict(aiohttp_client, mocker):
     mock_result = UserRegistrationResult(
-        success=False, error_message="User with this email already exists"
+        success=False,
+        error_type=UserRegistrationErrorType.USER_EXISTS,
+        error_message="User with this email already exists",
     )
     mock_user_service = mocker.patch("cityhive.app.views.api.UserService")
     register_user_mock = AsyncMock(return_value=mock_result)
@@ -293,7 +296,9 @@ async def test_create_user_with_database_error_returns_server_error(
     aiohttp_client, mocker
 ):
     mock_result = UserRegistrationResult(
-        success=False, error_message="Database connection failed"
+        success=False,
+        error_type=UserRegistrationErrorType.DATABASE_ERROR,
+        error_message="Database connection failed",
     )
     mock_user_service = mocker.patch("cityhive.app.views.api.UserService")
     register_user_mock = AsyncMock(return_value=mock_result)
