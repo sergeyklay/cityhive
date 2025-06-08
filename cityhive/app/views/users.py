@@ -33,7 +33,7 @@ logger = get_logger(__name__)
 
 def _validate_user_data(
     data: dict,
-) -> tuple[UserRegistrationData | None, web.Response | None]:
+) -> tuple[UserRegistrationData, None] | tuple[None, web.Response]:
     """
     Validate and parse user registration data.
 
@@ -90,29 +90,24 @@ async def create_user(request: web.Request) -> web.Response:
     - 500: Internal server error
     """
     try:
-        # Parse JSON request with proper error handling
         data, parse_error = await parse_json_request(request)
         if parse_error:
             return create_error_response(parse_error, 400)
 
-        # Ensure data is not None after successful parsing
         if data is None:
             return create_error_response("Invalid JSON data", 400)
 
-        # Validate and parse user data
         registration_data, validation_error = _validate_user_data(data)
         if validation_error:
             return validation_error
 
-        # Ensure registration_data is not None (defensive programming)
-        if registration_data is None:
-            return create_error_response("Failed to process user data", 500)
-
-        # Register user through domain service
         async with request.app[db_key]() as session:
             session: AsyncSession
             user_service = UserService()
-            result = await user_service.register_user(session, registration_data)
+            result = await user_service.register_user(
+                session,
+                registration_data,  # type: ignore
+            )
 
             if result.success and result.user:
                 logger.info(
@@ -134,8 +129,7 @@ async def create_user(request: web.Request) -> web.Response:
                     status=201,
                 )
 
-            # Determine appropriate HTTP status code based on structured error type
-            status_code = 400  # Default to client error
+            status_code = 400
             if result.error_type == UserRegistrationErrorType.USER_EXISTS:
                 status_code = 409
             elif result.error_type in (
@@ -147,7 +141,7 @@ async def create_user(request: web.Request) -> web.Response:
 
             logger.warning(
                 "User registration failed",
-                email=registration_data.email,
+                email=registration_data.email,  # type: ignore
                 error_type=result.error_type.value if result.error_type else None,
                 error=result.error_message,
             )
