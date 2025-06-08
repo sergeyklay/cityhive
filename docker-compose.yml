@@ -25,6 +25,27 @@ services:
       timeout: 10s
       retries: 5
 
+  cityhive_app:
+    build: .
+    container_name: cityhive_app
+    ports:
+      - "8080:8080"
+    networks:
+      cityhive:
+        aliases:
+          - cityhive-app
+    environment:
+      APP_ENV: ${APP_ENV:-development}
+      DATABASE_URI: ${DATABASE_URI:-postgresql+asyncpg://cityhive:cityhive@cityhive-db:5432/cityhive}
+    depends_on:
+      cityhive_db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
 networks:
   cityhive:
     driver: bridge
