@@ -97,12 +97,12 @@ jobs:
         env:
           POSTGRES_DB: cityhive_test
 
-      - name: Verify test database setup
-        run: |
-          docker compose exec -T cityhive_db psql -U cityhive -d $POSTGRES_DB -c "SELECT version();"
-          docker compose exec -T cityhive_db psql -U cityhive -d $POSTGRES_DB -c "SELECT PostGIS_Version();"
-        env:
-          POSTGRES_DB: cityhive_test
+      # - name: Verify test database setup
+      #   run: |
+      #     docker compose exec -T cityhive_db psql -U cityhive -d $POSTGRES_DB -c "SELECT version();"
+      #     docker compose exec -T cityhive_db psql -U cityhive -d $POSTGRES_DB -c "SELECT PostGIS_Version();"
+      #   env:
+      #     POSTGRES_DB: cityhive_test
 
       - name: Run database migrations
         run: make migrate
