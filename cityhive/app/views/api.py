@@ -5,57 +5,137 @@ These views handle REST API endpoints and return JSON responses.
 All API views should follow REST conventions and proper HTTP status codes.
 """
 
+from aiohttp import web
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from cityhive.app.helpers.request import (
+    create_error_response,
+    create_success_response,
+    parse_json_request,
+)
+from cityhive.app.helpers.validation import (
+    get_normalized_email,
+    sanitize_email_field,
+    sanitize_string_field,
+    validate_email,
+    validate_required_field,
+)
+from cityhive.domain.services.user import (
+    UserRegistrationData,
+    UserRegistrationErrorType,
+    UserService,
+)
 from cityhive.infrastructure.logging import get_logger
+from cityhive.infrastructure.typedefs import db_key
 
 logger = get_logger(__name__)
 
-# Future API views will be implemented here
-# Example structure:
 
-# async def list_users(request: web.Request) -> web.Response:
-#     """List all users API endpoint."""
-#     try:
-#         async with request.app[db_key]() as session:
-#             session: AsyncSession
-#             # Fetch users from database
-#             # users = await get_all_users(session)
-#             return web.json_response({"users": []})
-#     except Exception:
-#         logger.exception("Error listing users")
-#         return web.json_response(
-#             {"error": "Internal server error"}, status=500
-#         )
+async def create_user(request: web.Request) -> web.Response:
+    """
+    Register a new user.
 
-# async def create_user(request: web.Request) -> web.Response:
-#     """Create a new user API endpoint."""
-#     try:
-#         data = await request.json()
-#         async with request.app[db_key]() as session:
-#             session: AsyncSession
-#             # Create user in database
-#             # user = await create_new_user(session, data)
-#             return web.json_response({"user": {}}, status=201)
-#     except Exception:
-#         logger.exception("Error creating user")
-#         return web.json_response(
-#             {"error": "Internal server error"}, status=500
-#         )
+    Expected JSON payload:
+    {
+        "name": "User Name",
+        "email": "user@example.com"
+    }
 
-# async def get_user(request: web.Request) -> web.Response:
-#     """Get user by ID API endpoint."""
-#     try:
-#         user_id = request.match_info["user_id"]
-#         async with request.app[db_key]() as session:
-#             session: AsyncSession
-#             # Fetch user from database
-#             # user = await get_user_by_id(session, user_id)
-#             if not user:
-#                 return web.json_response(
-#                     {"error": "User not found"}, status=404
-#                 )
-#             return web.json_response({"user": {}})
-#     except Exception:
-#         logger.exception("Error getting user")
-#         return web.json_response(
-#             {"error": "Internal server error"}, status=500
-#         )
+    Returns:
+    - 201: User created successfully with API key
+    - 400: Invalid request data
+    - 409: User already exists
+    - 500: Internal server error
+    """
+    try:
+        # Parse JSON request with proper error handling
+        data, parse_error = await parse_json_request(request)
+        if parse_error:
+            return create_error_response(parse_error, 400)
+
+        # Ensure data is not None after successful parsing
+        assert data is not None
+
+        # Sanitize input fields
+        name = sanitize_string_field(data.get("name"))
+        email = sanitize_email_field(data.get("email"))
+
+        # Validate required fields
+        name_validation = validate_required_field(name, "Name")
+        if not name_validation.is_valid:
+            return create_error_response(
+                name_validation.error_message or "Name validation failed", 400
+            )
+
+        email_validation = validate_required_field(email, "Email")
+        if not email_validation.is_valid:
+            return create_error_response(
+                email_validation.error_message or "Email validation failed", 400
+            )
+
+        # Validate email format
+        email_format_validation = validate_email(email)
+        if not email_format_validation.is_valid:
+            return create_error_response(
+                email_format_validation.error_message or "Email format invalid", 400
+            )
+
+        # Get normalized email for storage consistency
+        normalized_email = get_normalized_email(email)
+        if normalized_email is None:
+            return create_error_response("Invalid email format", 400)
+
+        # Create registration data with normalized email
+        registration_data = UserRegistrationData(name=name, email=normalized_email)
+
+        # Register user through domain service
+        async with request.app[db_key]() as session:
+            session: AsyncSession
+            user_service = UserService()
+            result = await user_service.register_user(session, registration_data)
+
+            if result.success and result.user:
+                logger.info(
+                    "User registration API success",
+                    user_id=result.user.id,
+                    email=result.user.email,
+                )
+
+                return create_success_response(
+                    {
+                        "user": {
+                            "id": result.user.id,
+                            "name": result.user.name,
+                            "email": result.user.email,
+                            "api_key": str(result.user.api_key),
+                            "registered_at": result.user.registered_at.isoformat(),
+                        },
+                    },
+                    status=201,
+                )
+
+            # Determine appropriate HTTP status code based on structured error type
+            status_code = 400  # Default to client error
+            if result.error_type == UserRegistrationErrorType.USER_EXISTS:
+                status_code = 409
+            elif result.error_type in (
+                UserRegistrationErrorType.DATABASE_ERROR,
+                UserRegistrationErrorType.INTEGRITY_VIOLATION,
+                UserRegistrationErrorType.UNKNOWN_ERROR,
+            ):
+                status_code = 500
+
+            logger.warning(
+                "User registration failed",
+                email=email,
+                error_type=result.error_type.value if result.error_type else None,
+                error=result.error_message,
+            )
+
+            return create_error_response(
+                result.error_message or "Registration failed", status_code
+            )
+
+    except Exception:
+        logger.exception("Unexpected error in user registration API")
+        return create_error_response("Internal server error", 500)

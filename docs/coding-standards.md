@@ -55,6 +55,97 @@ def process_beehives(
 ) -> List[ProcessedHive]:
 ```
 
+## Testing Standards
+
+Follow pytest best practices with emphasis on maintainable, reusable test code:
+
+### Test Structure
+
+- **Pure functional style**: Use plain functions, avoid class-based tests
+- **Clear naming**: Tests should describe what is being tested and expected outcome
+- **DRY principle**: Extract common setup into reusable fixtures
+
+```python
+# ✅ DO: Descriptive test name and clean structure
+async def test_beehive_inspection_with_valid_data_creates_record(
+    client_with_db, inspection_data, mock_inspector
+):
+    async with client_with_db.post("/api/inspections", json=inspection_data) as response:
+        assert response.status == 201
+        data = await response.json()
+        assert data["beehive_id"] == inspection_data["beehive_id"]
+
+# ❌ DON'T: Vague names and repetitive setup
+async def test_inspection(aiohttp_client):
+    app = web.Application()  # Repetitive setup
+    app[db_key] = session_maker  # Should be in fixture
+    client = await aiohttp_client(app)
+    # Test logic...
+```
+
+### Fixture Organization
+
+Follow "Local when possible, shared when necessary" principle:
+
+**Move to `tests/conftest.py`:**
+- Cross-module utilities (AsyncMock context managers)
+- Core infrastructure patterns (database session mocks)
+- Stable, reusable helpers
+
+**Keep in test files:**
+- Domain-specific test data
+- Feature-specific fixtures that change frequently
+- Complex setup scenarios
+
+```python
+# ✅ DO: Shared infrastructure in conftest.py
+@pytest.fixture
+def mock_session():
+    """Create a mock async database session."""
+    return AsyncMock()
+
+@pytest.fixture
+def session_maker(mock_session):
+    """Create a session maker function that returns a context manager."""
+    def _session_maker():
+        return MockAsyncContextManager(mock_session)
+    return _session_maker
+
+# ✅ DO: Domain-specific fixtures in test files
+@pytest.fixture
+def inspection_data():
+    return {
+        "beehive_id": 1,
+        "inspector_notes": "Colony appears healthy",
+        "health_score": 0.89
+    }
+```
+
+### Composable Fixtures
+
+Build hierarchical fixtures that compose cleanly:
+
+```python
+# ✅ DO: Composable fixture hierarchy
+@pytest.fixture
+def base_app():
+    """Basic aiohttp application with routes."""
+    app = web.Application()
+    app.router.add_post("/api/inspections", create_inspection)
+    return app
+
+@pytest.fixture
+def app_with_db(base_app, session_maker):
+    """Application with database configured."""
+    base_app[db_key] = session_maker
+    return base_app
+
+@pytest.fixture
+async def client_with_db(aiohttp_client, app_with_db):
+    """Test client with database configured."""
+    return await aiohttp_client(app_with_db)
+```
+
 ## Docstrings
 
 Use Google-style docstrings for all public APIs:
@@ -242,3 +333,8 @@ from cityhive.infrastructure.logging import get_logger
 # Initialize structured logger
 logger = get_logger(__name__)
 ```
+
+---
+
+**See also:**
+- [Development Guide](docs/development.md) for setup and workflow instructions
