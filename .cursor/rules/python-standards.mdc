@@ -206,4 +206,3 @@ logger = get_logger(__name__)
 - [Development Guide](mdc:docs/development.md) for tooling and workflows
 - [Testing Guidelines](mdc:.cursor/rules/testing-guidelines.mdc) for test patterns
 - [Ruff configuration](mdc:pyproject.toml) for linting rules
-- Use Context7 for framework-specific patterns
