@@ -19,12 +19,12 @@ logger = get_logger(__name__)
 
 async def create_user(request: web.Request) -> web.Response:
     """
-    Register a new beekeeper user.
+    Register a new user.
 
     Expected JSON payload:
     {
-        "name": "Beekeeper Name",
-        "email": "beekeeper@example.com"
+        "name": "User Name",
+        "email": "user@example.com"
     }
 
     Returns:
@@ -68,11 +68,11 @@ async def create_user(request: web.Request) -> web.Response:
         async with request.app[db_key]() as session:
             session: AsyncSession
             user_service = UserService()
-            result = await user_service.register_beekeeper(session, registration_data)
+            result = await user_service.register_user(session, registration_data)
 
             if result.success and result.user:
                 logger.info(
-                    "Beekeeper registration API success",
+                    "User registration API success",
                     user_id=result.user.id,
                     email=result.user.email,
                 )
@@ -103,7 +103,7 @@ async def create_user(request: web.Request) -> web.Response:
                 status_code = 400
 
             logger.warning(
-                "Beekeeper registration failed",
+                "User registration failed",
                 email=email,
                 error=result.error_message,
             )

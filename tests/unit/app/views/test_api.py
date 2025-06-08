@@ -62,8 +62,8 @@ async def test_create_user_with_valid_data_returns_success(
 ):
     mock_result = UserRegistrationResult(success=True, user=mock_user)
     mock_user_service = mocker.patch("cityhive.app.views.api.UserService")
-    register_beekeeper_mock = AsyncMock(return_value=mock_result)
-    mock_user_service.return_value.register_beekeeper = register_beekeeper_mock
+    register_user_mock = AsyncMock(return_value=mock_result)
+    mock_user_service.return_value.register_user = register_user_mock
 
     session = AsyncMock()
 
@@ -265,8 +265,8 @@ async def test_create_user_with_existing_email_returns_conflict(aiohttp_client, 
         success=False, error_message="User with this email already exists"
     )
     mock_user_service = mocker.patch("cityhive.app.views.api.UserService")
-    register_beekeeper_mock = AsyncMock(return_value=mock_result)
-    mock_user_service.return_value.register_beekeeper = register_beekeeper_mock
+    register_user_mock = AsyncMock(return_value=mock_result)
+    mock_user_service.return_value.register_user = register_user_mock
 
     session = AsyncMock()
 
@@ -296,8 +296,8 @@ async def test_create_user_with_database_error_returns_server_error(
         success=False, error_message="Database connection failed"
     )
     mock_user_service = mocker.patch("cityhive.app.views.api.UserService")
-    register_beekeeper_mock = AsyncMock(return_value=mock_result)
-    mock_user_service.return_value.register_beekeeper = register_beekeeper_mock
+    register_user_mock = AsyncMock(return_value=mock_result)
+    mock_user_service.return_value.register_user = register_user_mock
 
     session = AsyncMock()
 
@@ -324,7 +324,7 @@ async def test_create_user_with_unexpected_exception_returns_internal_error(
     aiohttp_client, mocker
 ):
     mock_user_service = mocker.patch("cityhive.app.views.api.UserService")
-    mock_user_service.return_value.register_beekeeper.side_effect = Exception(
+    mock_user_service.return_value.register_user.side_effect = Exception(
         "Unexpected error"
     )
 
@@ -360,8 +360,8 @@ async def test_create_user_normalizes_email_to_lowercase(aiohttp_client, mocker)
 
     mock_result = UserRegistrationResult(success=True, user=mock_user)
     mock_user_service = mocker.patch("cityhive.app.views.api.UserService")
-    register_beekeeper_mock = AsyncMock(return_value=mock_result)
-    mock_user_service.return_value.register_beekeeper = register_beekeeper_mock
+    register_user_mock = AsyncMock(return_value=mock_result)
+    mock_user_service.return_value.register_user = register_user_mock
 
     session = AsyncMock()
 
@@ -379,7 +379,7 @@ async def test_create_user_normalizes_email_to_lowercase(aiohttp_client, mocker)
     ) as response:
         assert response.status == 201
 
-        call_args = mock_user_service.return_value.register_beekeeper.call_args
+        call_args = mock_user_service.return_value.register_user.call_args
         assert call_args[0][1].email == "john@example.com"
 
 
@@ -395,8 +395,8 @@ async def test_create_user_trims_whitespace_from_inputs(aiohttp_client, mocker):
 
     mock_result = UserRegistrationResult(success=True, user=mock_user)
     mock_user_service = mocker.patch("cityhive.app.views.api.UserService")
-    register_beekeeper_mock = AsyncMock(return_value=mock_result)
-    mock_user_service.return_value.register_beekeeper = register_beekeeper_mock
+    register_user_mock = AsyncMock(return_value=mock_result)
+    mock_user_service.return_value.register_user = register_user_mock
 
     session = AsyncMock()
 
@@ -415,7 +415,7 @@ async def test_create_user_trims_whitespace_from_inputs(aiohttp_client, mocker):
     ) as response:
         assert response.status == 201
 
-        call_args = mock_user_service.return_value.register_beekeeper.call_args
+        call_args = mock_user_service.return_value.register_user.call_args
         assert call_args[0][1].name == "John Beekeeper"
         assert call_args[0][1].email == "john@example.com"
 
@@ -432,8 +432,8 @@ async def test_create_user_returns_correct_content_type_header(aiohttp_client, m
 
     mock_result = UserRegistrationResult(success=True, user=mock_user)
     mock_user_service = mocker.patch("cityhive.app.views.api.UserService")
-    register_beekeeper_mock = AsyncMock(return_value=mock_result)
-    mock_user_service.return_value.register_beekeeper = register_beekeeper_mock
+    register_user_mock = AsyncMock(return_value=mock_result)
+    mock_user_service.return_value.register_user = register_user_mock
 
     session = AsyncMock()
 

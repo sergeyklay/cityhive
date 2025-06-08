@@ -15,5 +15,5 @@ api_routes = web.RouteTableDef()
 
 @api_routes.post("/api/users", name="api_users_create")
 async def users_create_route(request: web.Request) -> web.Response:
-    """Beekeeper registration API endpoint."""
+    """User registration API endpoint."""
     return await create_user(request)

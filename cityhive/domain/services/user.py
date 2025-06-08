@@ -36,11 +36,11 @@ class UserRegistrationResult:
 class UserService:
     """Domain service for user-related business logic."""
 
-    async def register_beekeeper(
+    async def register_user(
         self, session: AsyncSession, registration_data: UserRegistrationData
     ) -> UserRegistrationResult:
         """
-        Register a new beekeeper user.
+        Register a new user.
 
         Args:
             session: Database session
@@ -50,7 +50,7 @@ class UserService:
             UserRegistrationResult with success status and user data or error
         """
         logger.info(
-            "Starting beekeeper registration",
+            "Starting user registration",
             email=registration_data.email,
             name=registration_data.name,
         )
@@ -79,7 +79,7 @@ class UserService:
             await session.commit()
 
             logger.info(
-                "Beekeeper registration successful",
+                "User registration successful",
                 user_id=user.id,
                 email=user.email,
                 api_key=str(user.api_key),
@@ -101,7 +101,7 @@ class UserService:
         except Exception as e:
             await session.rollback()
             logger.exception(
-                "Unexpected error during beekeeper registration",
+                "Unexpected error during user registration",
                 email=registration_data.email,
                 error_type=type(e).__name__,
             )
