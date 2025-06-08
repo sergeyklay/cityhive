@@ -74,10 +74,10 @@ async def wait_for_database(
     )
 
     for attempt in range(1, max_attempts + 1):
-        start_time = asyncio.get_event_loop().time()
+        start_time = asyncio.get_running_loop().time()
 
         if await check_database_connection(database_url):
-            response_time = (asyncio.get_event_loop().time() - start_time) * 1000
+            response_time = (asyncio.get_running_loop().time() - start_time) * 1000
             logger.info(
                 "Database connectivity check successful",
                 attempt=attempt,
