@@ -97,7 +97,7 @@ jobs:
           docker compose logs cityhive_db
           docker inspect cityhive_db
         env:
-          APP_ENV: testing
+          POSTGRES_DB: cityhive_test
 
       - name: Run database migrations
         run: make migrate
