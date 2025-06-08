@@ -18,15 +18,15 @@ alwaysApply: false
 ```bash
 # ✅ DO: Correct uv usage
 uv add package-name                    # Add new dependency
-uv add --dev pytest                    # Add development dependency
+uv add --group dev ruff                # Add development dependency
 uv add package-name --upgrade-package  # Upgrade specific package
 uv run tool-name                       # Run tools via uv
-uv sync                               # Install from lock file
+uv sync                                # Install from lock file
 
 # ❌ DON'T: Forbidden commands
 pip install package-name              # Never use pip
-uv pip install package-name          # Don't use uv pip
-uv add package-name@latest           # Don't use @latest syntax
+uv pip install package-name           # Don't use uv pip
+uv add package-name@latest            # Don't use @latest syntax
 ```
 
 ## Quick Reference
@@ -35,8 +35,8 @@ uv add package-name@latest           # Don't use @latest syntax
 # Add dependency
 uv add package-name
 
-# Add dev dependency
-uv add --dev pytest
+# Add testing dependency
+uv add --group tesing pytest
 
 # Install from lock file
 uv sync
