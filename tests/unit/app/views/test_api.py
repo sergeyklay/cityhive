@@ -289,7 +289,7 @@ async def test_create_user_with_existing_email_returns_conflict(aiohttp_client, 
         assert data["error"] == "User with this email already exists"
 
 
-async def test_create_user_with_database_error_returns_bad_request(
+async def test_create_user_with_database_error_returns_server_error(
     aiohttp_client, mocker
 ):
     mock_result = UserRegistrationResult(
@@ -313,7 +313,7 @@ async def test_create_user_with_database_error_returns_bad_request(
     async with client.post(
         "/api/users", json={"name": "John", "email": "john@example.com"}
     ) as response:
-        assert response.status == 400
+        assert response.status == 500
 
         data = await response.json()
         assert data["success"] is False

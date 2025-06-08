@@ -5,6 +5,8 @@ These views handle REST API endpoints and return JSON responses.
 All API views should follow REST conventions and proper HTTP status codes.
 """
 
+import json
+
 from aiohttp import web
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -35,7 +37,7 @@ async def create_user(request: web.Request) -> web.Response:
         # Parse and validate JSON request data
         try:
             data = await request.json()
-        except Exception:
+        except json.JSONDecodeError:
             logger.warning("Invalid JSON in user registration request")
             return web.json_response({"error": "Invalid JSON format"}, status=400)
 
@@ -92,6 +94,11 @@ async def create_user(request: web.Request) -> web.Response:
             # Determine appropriate HTTP status code
             if result.error_message and "already exists" in result.error_message:
                 status_code = 409
+            elif result.error_message and (
+                "connection" in result.error_message.lower()
+                or "database" in result.error_message.lower()
+            ):
+                status_code = 500
             else:
                 status_code = 400
 
