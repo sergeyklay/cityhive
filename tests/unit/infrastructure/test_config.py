@@ -62,8 +62,8 @@ def test_base_config_database_uri_validation(database_uri: str, expected_scheme:
     [
         ("db_pool_size", 0),
         ("db_pool_size", 51),
-        ("db_pool_overflow", -1),
-        ("db_pool_overflow", 101),
+        ("db_max_overflow", -1),
+        ("db_max_overflow", 101),
         ("app_port", 0),
         ("app_port", 65536),
     ],
