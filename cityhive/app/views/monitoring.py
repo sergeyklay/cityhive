@@ -63,16 +63,21 @@ async def readiness_check(request: web.Request) -> web.Response:
         response_data["version"] = health.version
 
     if health.components:
-        components_data = [
-            {
+        components_data = []
+        for component in health.components:
+            component_dict = {
                 "name": component.name,
                 "status": component.status.value,
                 "message": component.message,
                 "response_time_ms": component.response_time_ms,
-                **(component.metadata or {}),
             }
-            for component in health.components
-        ]
+
+            # Add metadata safely without overwriting core fields
+            if component.metadata:
+                component_dict["metadata"] = component.metadata
+
+            components_data.append(component_dict)
+
         response_data["components"] = components_data
 
     logger.info(

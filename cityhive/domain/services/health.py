@@ -4,6 +4,7 @@ Health check domain service.
 Centralizes all health check logic following clean architecture principles.
 """
 
+import asyncio
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from enum import Enum
@@ -55,9 +56,15 @@ class SystemHealth:
 class HealthCheckService:
     """Service responsible for performing system health checks."""
 
-    def __init__(self, service_name: str = "cityhive", version: str | None = None):
+    def __init__(
+        self,
+        service_name: str = "cityhive",
+        version: str | None = None,
+        db_timeout_seconds: float = 5.0,
+    ):
         self.service_name = service_name
         self.version = version
+        self.db_timeout_seconds = db_timeout_seconds
         self._logger = get_logger(self.__class__.__name__)
 
     async def check_liveness(self) -> SystemHealth:
@@ -99,14 +106,19 @@ class HealthCheckService:
         )
 
     async def _check_database(self, db_session_factory: Any) -> ComponentHealth:
-        """Check database connectivity and basic functionality."""
+        """
+        Check database connectivity and basic functionality with timeout protection.
+
+        Uses asyncio.wait_for to prevent hanging on unresponsive databases.
+        """
         start_time = datetime.now(timezone.utc)
 
         try:
-            async with db_session_factory() as session:
-                session: AsyncSession
-                # Simple query to test connectivity
-                await session.execute(text("SELECT 1"))
+            # Wrap the database operation in a timeout
+            await asyncio.wait_for(
+                self._perform_database_check(db_session_factory),
+                timeout=self.db_timeout_seconds,
+            )
 
             response_time = (
                 datetime.now(timezone.utc) - start_time
@@ -115,6 +127,7 @@ class HealthCheckService:
             self._logger.info(
                 "Database health check passed",
                 response_time_ms=response_time,
+                timeout_seconds=self.db_timeout_seconds,
             )
 
             return ComponentHealth(
@@ -122,6 +135,25 @@ class HealthCheckService:
                 status=HealthStatus.HEALTHY,
                 message="Connected successfully",
                 response_time_ms=response_time,
+            )
+
+        except asyncio.TimeoutError:
+            response_time = (
+                datetime.now(timezone.utc) - start_time
+            ).total_seconds() * 1000
+
+            self._logger.warning(
+                "Database health check timed out",
+                timeout_seconds=self.db_timeout_seconds,
+                response_time_ms=response_time,
+            )
+
+            return ComponentHealth(
+                name="database",
+                status=HealthStatus.UNHEALTHY,
+                message=f"Connection timed out after {self.db_timeout_seconds}s",
+                response_time_ms=response_time,
+                metadata={"timeout_seconds": self.db_timeout_seconds},
             )
 
         except Exception as e:
@@ -134,6 +166,7 @@ class HealthCheckService:
                 error=str(e),
                 error_type=type(e).__name__,
                 response_time_ms=response_time,
+                timeout_seconds=self.db_timeout_seconds,
             )
 
             return ComponentHealth(
@@ -143,3 +176,10 @@ class HealthCheckService:
                 response_time_ms=response_time,
                 metadata={"error": str(e)},
             )
+
+    async def _perform_database_check(self, db_session_factory: Any) -> None:
+        """Perform the actual database connectivity check."""
+        async with db_session_factory() as session:
+            session: AsyncSession
+            # Simple query to test connectivity
+            await session.execute(text("SELECT 1"))

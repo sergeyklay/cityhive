@@ -229,3 +229,76 @@ async def test_database_check_measures_response_time():
     db_component = health.components[0]
     assert db_component.response_time_ms is not None
     assert db_component.response_time_ms >= 0
+
+
+def test_component_health_with_conflicting_metadata_keys():
+    """Test that component health metadata doesn't interfere with core fields."""
+    conflicting_metadata = {
+        "name": "metadata_name_should_not_override",
+        "status": "metadata_status_should_not_override",
+        "message": "metadata_message_should_not_override",
+        "response_time_ms": 9999,
+        "extra_info": "this should be preserved",
+    }
+
+    component = ComponentHealth(
+        name="database",
+        status=HealthStatus.HEALTHY,
+        message="Connected successfully",
+        response_time_ms=45.2,
+        metadata=conflicting_metadata,
+    )
+
+    assert component.name == "database"
+    assert component.status == HealthStatus.HEALTHY
+    assert component.message == "Connected successfully"
+    assert component.response_time_ms == 45.2
+
+    assert component.metadata == conflicting_metadata
+    assert component.metadata is not None
+    assert component.metadata["extra_info"] == "this should be preserved"
+
+
+def test_health_check_service_initialization_with_timeout():
+    """Test health check service initialization with custom timeout."""
+    service = HealthCheckService(
+        service_name="test-service", version="1.0.0", db_timeout_seconds=10.0
+    )
+    assert service.service_name == "test-service"
+    assert service.version == "1.0.0"
+    assert service.db_timeout_seconds == 10.0
+
+
+@pytest.mark.asyncio
+async def test_check_readiness_with_database_timeout():
+    """Test readiness check handles database timeout correctly."""
+    import asyncio
+
+    class SlowMockAsyncContextManager:
+        async def __aenter__(self):
+            # Simulate a slow database that exceeds timeout
+            await asyncio.sleep(10)  # Much longer than timeout
+            return AsyncMock()
+
+        async def __aexit__(self, exc_type, exc_val, exc_tb):
+            pass
+
+    def slow_mock_session_factory():
+        return SlowMockAsyncContextManager()
+
+    service = HealthCheckService(db_timeout_seconds=0.1)  # Very short timeout
+    health = await service.check_readiness(slow_mock_session_factory)
+
+    assert health.status == HealthStatus.UNHEALTHY
+    assert health.components is not None
+    assert len(health.components) == 1
+
+    db_component = health.components[0]
+    assert db_component.name == "database"
+    assert db_component.status == HealthStatus.UNHEALTHY
+    assert db_component.message is not None
+    assert "timed out after 0.1s" in db_component.message
+    assert db_component.metadata is not None
+    assert db_component.metadata["timeout_seconds"] == 0.1
+    assert isinstance(db_component.response_time_ms, float)
+    assert db_component.response_time_ms >= 100  # Should be at least 100ms (0.1s)
