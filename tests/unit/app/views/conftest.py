@@ -25,21 +25,11 @@ def app_with_db(base_app, session_maker):
     return base_app
 
 
-def make_api_request(method: str, path: str, app: web.Application, json_data=None):
+def make_api_request(method: str, path: str, app: web.Application):
     """Create a mocked request for unit testing API views."""
-    headers = {"Content-Type": "application/json"} if json_data else {}
-
-    # For make_mocked_request, we'll simulate JSON data by adding it to the request
-    # The actual JSON parsing will be handled by the view function
-    kwargs = {
-        "method": method,
-        "path": path,
-        "headers": headers,
-        "app": app,
-    }
-
-    if json_data:
-        # We'll patch the request.json() method in tests to return our data
-        pass
-
-    return make_mocked_request(**kwargs)
+    return make_mocked_request(
+        method=method,
+        path=path,
+        headers={"Content-Type": "application/json"},
+        app=app,
+    )

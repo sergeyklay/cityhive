@@ -39,7 +39,7 @@ def mock_user(mocker):
 async def test_create_user_with_valid_data_returns_success(
     app_with_db, mocker, user_data, mock_user
 ):
-    request = make_api_request("POST", "/api/users", app_with_db, user_data)
+    request = make_api_request("POST", "/api/users", app_with_db)
 
     # Mock request.json() to return our test data
     request.json = AsyncMock(return_value=user_data)
@@ -68,7 +68,7 @@ async def test_create_user_with_invalid_json_returns_bad_request(base_app, mocke
 
 async def test_create_user_with_missing_name_returns_validation_error(base_app, mocker):
     data = {"email": "john@example.com"}
-    request = make_api_request("POST", "/api/users", base_app, data)
+    request = make_api_request("POST", "/api/users", base_app)
     request.json = AsyncMock(return_value=data)
 
     response = await create_user(request)
@@ -78,7 +78,7 @@ async def test_create_user_with_missing_name_returns_validation_error(base_app, 
 
 async def test_create_user_with_empty_name_returns_validation_error(base_app, mocker):
     data = {"name": "", "email": "john@example.com"}
-    request = make_api_request("POST", "/api/users", base_app, data)
+    request = make_api_request("POST", "/api/users", base_app)
     request.json = AsyncMock(return_value=data)
 
     response = await create_user(request)
@@ -90,7 +90,7 @@ async def test_create_user_with_whitespace_name_returns_validation_error(
     base_app, mocker
 ):
     data = {"name": "   ", "email": "john@example.com"}
-    request = make_api_request("POST", "/api/users", base_app, data)
+    request = make_api_request("POST", "/api/users", base_app)
     request.json = AsyncMock(return_value=data)
 
     response = await create_user(request)
@@ -102,7 +102,7 @@ async def test_create_user_with_missing_email_returns_validation_error(
     base_app, mocker
 ):
     data = {"name": "John"}
-    request = make_api_request("POST", "/api/users", base_app, data)
+    request = make_api_request("POST", "/api/users", base_app)
     request.json = AsyncMock(return_value=data)
 
     response = await create_user(request)
@@ -112,7 +112,7 @@ async def test_create_user_with_missing_email_returns_validation_error(
 
 async def test_create_user_with_empty_email_returns_validation_error(base_app, mocker):
     data = {"name": "John", "email": ""}
-    request = make_api_request("POST", "/api/users", base_app, data)
+    request = make_api_request("POST", "/api/users", base_app)
     request.json = AsyncMock(return_value=data)
 
     response = await create_user(request)
@@ -124,7 +124,7 @@ async def test_create_user_with_whitespace_email_returns_validation_error(
     base_app, mocker
 ):
     data = {"name": "John", "email": "   "}
-    request = make_api_request("POST", "/api/users", base_app, data)
+    request = make_api_request("POST", "/api/users", base_app)
     request.json = AsyncMock(return_value=data)
 
     response = await create_user(request)
@@ -136,7 +136,7 @@ async def test_create_user_with_invalid_email_format_returns_validation_error(
     base_app, mocker
 ):
     data = {"name": "John", "email": "invalid-email"}
-    request = make_api_request("POST", "/api/users", base_app, data)
+    request = make_api_request("POST", "/api/users", base_app)
     request.json = AsyncMock(return_value=data)
 
     response = await create_user(request)
@@ -148,7 +148,7 @@ async def test_create_user_with_email_missing_domain_returns_validation_error(
     base_app, mocker
 ):
     data = {"name": "John", "email": "no-domain@"}
-    request = make_api_request("POST", "/api/users", base_app, data)
+    request = make_api_request("POST", "/api/users", base_app)
     request.json = AsyncMock(return_value=data)
 
     response = await create_user(request)
@@ -160,7 +160,7 @@ async def test_create_user_with_email_missing_local_returns_validation_error(
     base_app, mocker
 ):
     data = {"name": "John", "email": "@no-local.com"}
-    request = make_api_request("POST", "/api/users", base_app, data)
+    request = make_api_request("POST", "/api/users", base_app)
     request.json = AsyncMock(return_value=data)
 
     response = await create_user(request)
@@ -172,7 +172,7 @@ async def test_create_user_with_invalid_email_format_double_at_returns_validatio
     base_app, mocker
 ):
     data = {"name": "John", "email": "invalid@@domain.com"}
-    request = make_api_request("POST", "/api/users", base_app, data)
+    request = make_api_request("POST", "/api/users", base_app)
     request.json = AsyncMock(return_value=data)
 
     response = await create_user(request)
@@ -182,7 +182,7 @@ async def test_create_user_with_invalid_email_format_double_at_returns_validatio
 
 async def test_create_user_with_existing_email_returns_conflict(app_with_db, mocker):
     data = {"name": "John", "email": "existing@example.com"}
-    request = make_api_request("POST", "/api/users", app_with_db, data)
+    request = make_api_request("POST", "/api/users", app_with_db)
     request.json = AsyncMock(return_value=data)
 
     mock_result = UserRegistrationResult(
@@ -203,7 +203,7 @@ async def test_create_user_with_database_error_returns_server_error(
     app_with_db, mocker
 ):
     data = {"name": "John", "email": "john@example.com"}
-    request = make_api_request("POST", "/api/users", app_with_db, data)
+    request = make_api_request("POST", "/api/users", app_with_db)
     request.json = AsyncMock(return_value=data)
 
     mock_result = UserRegistrationResult(
@@ -224,7 +224,7 @@ async def test_create_user_with_unexpected_exception_returns_internal_error(
     app_with_db, mocker
 ):
     data = {"name": "John", "email": "john@example.com"}
-    request = make_api_request("POST", "/api/users", app_with_db, data)
+    request = make_api_request("POST", "/api/users", app_with_db)
     request.json = AsyncMock(return_value=data)
 
     mock_user_service = mocker.patch("cityhive.app.views.users.UserService")
@@ -240,7 +240,7 @@ async def test_create_user_normalizes_email_to_lowercase(
     app_with_db, mocker, mock_user
 ):
     data = {"name": "John", "email": "JOHN@EXAMPLE.COM"}
-    request = make_api_request("POST", "/api/users", app_with_db, data)
+    request = make_api_request("POST", "/api/users", app_with_db)
     request.json = AsyncMock(return_value=data)
 
     mock_result = UserRegistrationResult(success=True, user=mock_user)
@@ -255,7 +255,7 @@ async def test_create_user_normalizes_email_to_lowercase(
 
 async def test_create_user_trims_whitespace_from_inputs(app_with_db, mocker, mock_user):
     data = {"name": "  John  ", "email": "  john@example.com  "}
-    request = make_api_request("POST", "/api/users", app_with_db, data)
+    request = make_api_request("POST", "/api/users", app_with_db)
     request.json = AsyncMock(return_value=data)
 
     mock_result = UserRegistrationResult(success=True, user=mock_user)
@@ -272,7 +272,7 @@ async def test_create_user_returns_correct_content_type_header(
     app_with_db, mocker, mock_user
 ):
     data = {"name": "Test User", "email": "test@example.com"}
-    request = make_api_request("POST", "/api/users", app_with_db, data)
+    request = make_api_request("POST", "/api/users", app_with_db)
     request.json = AsyncMock(return_value=data)
 
     mock_result = UserRegistrationResult(success=True, user=mock_user)

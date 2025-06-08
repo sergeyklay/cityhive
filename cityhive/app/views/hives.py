@@ -158,7 +158,7 @@ async def create_hive(request: web.Request) -> web.Response:
         if data is None:
             return create_error_response("Invalid JSON data", 400)
 
-            # Validate and parse hive data
+        # Validate and parse hive data
         creation_data, validation_error = _validate_and_parse_hive_data(data)
         if validation_error:
             return validation_error

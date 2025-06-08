@@ -64,7 +64,7 @@ def mock_hive_minimal(mocker):
 async def test_create_hive_with_valid_data_returns_success(
     app_with_db, mocker, hive_data, mock_hive
 ):
-    request = make_api_request("POST", "/api/hives", app_with_db, hive_data)
+    request = make_api_request("POST", "/api/hives", app_with_db)
     request.json = AsyncMock(return_value=hive_data)
 
     mock_result = HiveCreationResult(success=True, hive=mock_hive)
@@ -80,7 +80,7 @@ async def test_create_hive_with_valid_data_returns_success(
 async def test_create_hive_with_minimal_data_returns_success(
     app_with_db, mocker, minimal_hive_data, mock_hive_minimal
 ):
-    request = make_api_request("POST", "/api/hives", app_with_db, minimal_hive_data)
+    request = make_api_request("POST", "/api/hives", app_with_db)
     request.json = AsyncMock(return_value=minimal_hive_data)
 
     mock_result = HiveCreationResult(success=True, hive=mock_hive_minimal)
@@ -106,7 +106,7 @@ async def test_create_hive_with_missing_user_id_returns_validation_error(
     base_app, mocker
 ):
     data = {"name": "Hive Alpha"}
-    request = make_api_request("POST", "/api/hives", base_app, data)
+    request = make_api_request("POST", "/api/hives", base_app)
     request.json = AsyncMock(return_value=data)
 
     response = await create_hive(request)
@@ -116,7 +116,7 @@ async def test_create_hive_with_missing_user_id_returns_validation_error(
 
 async def test_create_hive_with_null_user_id_returns_validation_error(base_app, mocker):
     data = {"user_id": None, "name": "Hive Alpha"}
-    request = make_api_request("POST", "/api/hives", base_app, data)
+    request = make_api_request("POST", "/api/hives", base_app)
     request.json = AsyncMock(return_value=data)
 
     response = await create_hive(request)
@@ -128,7 +128,7 @@ async def test_create_hive_with_invalid_user_id_type_returns_validation_error(
     base_app, mocker
 ):
     data = {"user_id": "invalid", "name": "Hive Alpha"}
-    request = make_api_request("POST", "/api/hives", base_app, data)
+    request = make_api_request("POST", "/api/hives", base_app)
     request.json = AsyncMock(return_value=data)
 
     response = await create_hive(request)
@@ -138,7 +138,7 @@ async def test_create_hive_with_invalid_user_id_type_returns_validation_error(
 
 async def test_create_hive_with_missing_name_returns_validation_error(base_app, mocker):
     data = {"user_id": 1}
-    request = make_api_request("POST", "/api/hives", base_app, data)
+    request = make_api_request("POST", "/api/hives", base_app)
     request.json = AsyncMock(return_value=data)
 
     response = await create_hive(request)
@@ -148,7 +148,7 @@ async def test_create_hive_with_missing_name_returns_validation_error(base_app, 
 
 async def test_create_hive_with_empty_name_returns_validation_error(base_app, mocker):
     data = {"user_id": 1, "name": ""}
-    request = make_api_request("POST", "/api/hives", base_app, data)
+    request = make_api_request("POST", "/api/hives", base_app)
     request.json = AsyncMock(return_value=data)
 
     response = await create_hive(request)
@@ -160,7 +160,7 @@ async def test_create_hive_with_whitespace_name_returns_validation_error(
     base_app, mocker
 ):
     data = {"user_id": 1, "name": "   "}
-    request = make_api_request("POST", "/api/hives", base_app, data)
+    request = make_api_request("POST", "/api/hives", base_app)
     request.json = AsyncMock(return_value=data)
 
     response = await create_hive(request)
@@ -172,7 +172,7 @@ async def test_create_hive_with_invalid_latitude_returns_success_without_coordin
     app_with_db, mocker, mock_hive_minimal
 ):
     data = {"user_id": 1, "name": "Hive Alpha", "latitude": "invalid"}
-    request = make_api_request("POST", "/api/hives", app_with_db, data)
+    request = make_api_request("POST", "/api/hives", app_with_db)
     request.json = AsyncMock(return_value=data)
 
     mock_result = HiveCreationResult(success=True, hive=mock_hive_minimal)
@@ -189,7 +189,7 @@ async def test_create_hive_with_invalid_longitude_returns_success_without_coordi
     app_with_db, mocker, mock_hive_minimal
 ):
     data = {"user_id": 1, "name": "Hive Alpha", "longitude": "invalid"}
-    request = make_api_request("POST", "/api/hives", app_with_db, data)
+    request = make_api_request("POST", "/api/hives", app_with_db)
     request.json = AsyncMock(return_value=data)
 
     mock_result = HiveCreationResult(success=True, hive=mock_hive_minimal)
@@ -206,7 +206,7 @@ async def test_create_hive_with_latitude_only_returns_validation_error(
     base_app, mocker
 ):
     data = {"user_id": 1, "name": "Hive Alpha", "latitude": 40.7128}
-    request = make_api_request("POST", "/api/hives", base_app, data)
+    request = make_api_request("POST", "/api/hives", base_app)
     request.json = AsyncMock(return_value=data)
 
     response = await create_hive(request)
@@ -218,7 +218,7 @@ async def test_create_hive_with_longitude_only_returns_validation_error(
     base_app, mocker
 ):
     data = {"user_id": 1, "name": "Hive Alpha", "longitude": -74.0060}
-    request = make_api_request("POST", "/api/hives", base_app, data)
+    request = make_api_request("POST", "/api/hives", base_app)
     request.json = AsyncMock(return_value=data)
 
     response = await create_hive(request)
@@ -230,7 +230,7 @@ async def test_create_hive_with_latitude_out_of_range_returns_validation_error(
     base_app, mocker
 ):
     data = {"user_id": 1, "name": "Hive Alpha", "latitude": 91.0, "longitude": 0.0}
-    request = make_api_request("POST", "/api/hives", base_app, data)
+    request = make_api_request("POST", "/api/hives", base_app)
     request.json = AsyncMock(return_value=data)
 
     response = await create_hive(request)
@@ -242,7 +242,7 @@ async def test_create_hive_with_longitude_out_of_range_returns_validation_error(
     base_app, mocker
 ):
     data = {"user_id": 1, "name": "Hive Alpha", "latitude": 0.0, "longitude": 181.0}
-    request = make_api_request("POST", "/api/hives", base_app, data)
+    request = make_api_request("POST", "/api/hives", base_app)
     request.json = AsyncMock(return_value=data)
 
     response = await create_hive(request)
@@ -258,7 +258,7 @@ async def test_create_hive_with_invalid_date_format_returns_validation_error(
         "name": "Hive Alpha",
         "installed_at": "not-a-date",
     }
-    request = make_api_request("POST", "/api/hives", base_app, data)
+    request = make_api_request("POST", "/api/hives", base_app)
     request.json = AsyncMock(return_value=data)
 
     response = await create_hive(request)
@@ -268,7 +268,7 @@ async def test_create_hive_with_invalid_date_format_returns_validation_error(
 
 async def test_create_hive_trims_whitespace_from_name(app_with_db, mocker, mock_hive):
     data = {"user_id": 1, "name": "  Hive Alpha  "}
-    request = make_api_request("POST", "/api/hives", app_with_db, data)
+    request = make_api_request("POST", "/api/hives", app_with_db)
     request.json = AsyncMock(return_value=data)
 
     mock_result = HiveCreationResult(success=True, hive=mock_hive)
@@ -285,7 +285,7 @@ async def test_create_hive_trims_whitespace_from_frame_type(
     app_with_db, mocker, mock_hive
 ):
     data = {"user_id": 1, "name": "Hive Alpha", "frame_type": "  Langstroth  "}
-    request = make_api_request("POST", "/api/hives", app_with_db, data)
+    request = make_api_request("POST", "/api/hives", app_with_db)
     request.json = AsyncMock(return_value=data)
 
     mock_result = HiveCreationResult(success=True, hive=mock_hive)
@@ -302,7 +302,7 @@ async def test_create_hive_handles_empty_frame_type_as_none(
     app_with_db, mocker, mock_hive_minimal
 ):
     data = {"user_id": 1, "name": "Hive Alpha", "frame_type": ""}
-    request = make_api_request("POST", "/api/hives", app_with_db, data)
+    request = make_api_request("POST", "/api/hives", app_with_db)
     request.json = AsyncMock(return_value=data)
 
     mock_result = HiveCreationResult(success=True, hive=mock_hive_minimal)
@@ -317,7 +317,7 @@ async def test_create_hive_handles_empty_frame_type_as_none(
 
 async def test_create_hive_with_user_not_found_returns_not_found(app_with_db, mocker):
     data = {"user_id": 999, "name": "Hive Alpha"}
-    request = make_api_request("POST", "/api/hives", app_with_db, data)
+    request = make_api_request("POST", "/api/hives", app_with_db)
     request.json = AsyncMock(return_value=data)
 
     mock_result = HiveCreationResult(
@@ -338,7 +338,7 @@ async def test_create_hive_with_invalid_location_returns_validation_error(
     app_with_db, mocker
 ):
     data = {"user_id": 1, "name": "Hive Alpha"}
-    request = make_api_request("POST", "/api/hives", app_with_db, data)
+    request = make_api_request("POST", "/api/hives", app_with_db)
     request.json = AsyncMock(return_value=data)
 
     mock_result = HiveCreationResult(
@@ -359,7 +359,7 @@ async def test_create_hive_with_database_error_returns_server_error(
     app_with_db, mocker
 ):
     data = {"user_id": 1, "name": "Hive Alpha"}
-    request = make_api_request("POST", "/api/hives", app_with_db, data)
+    request = make_api_request("POST", "/api/hives", app_with_db)
     request.json = AsyncMock(return_value=data)
 
     mock_result = HiveCreationResult(
@@ -380,7 +380,7 @@ async def test_create_hive_with_unexpected_exception_returns_internal_error(
     app_with_db, mocker
 ):
     data = {"user_id": 1, "name": "Hive Alpha"}
-    request = make_api_request("POST", "/api/hives", app_with_db, data)
+    request = make_api_request("POST", "/api/hives", app_with_db)
     request.json = AsyncMock(return_value=data)
 
     mock_hive_service = mocker.patch("cityhive.app.views.hives.HiveService")
@@ -396,7 +396,7 @@ async def test_create_hive_returns_correct_content_type_header(
     app_with_db, mocker, mock_hive
 ):
     data = {"user_id": 1, "name": "Hive Alpha"}
-    request = make_api_request("POST", "/api/hives", app_with_db, data)
+    request = make_api_request("POST", "/api/hives", app_with_db)
     request.json = AsyncMock(return_value=data)
 
     mock_result = HiveCreationResult(success=True, hive=mock_hive)
