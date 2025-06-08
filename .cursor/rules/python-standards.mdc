@@ -104,21 +104,41 @@ if not user:
 
 ## Logging
 
-- **Never use `print()`** - use logging module
-- **No f-strings in log messages** - use % formatting or extra dict
-- **Structured logging** for complex data
+- **Use structlog infrastructure**: Import from `cityhive.infrastructure.logging`
+- **Structured key-value pairs**: Never use f-strings or % formatting
+- **Context binding**: Use logger.bind() for related operations
+- **Request context**: Automatically handled by middleware
 
 ```python
-# ✅ DO:
-import logging
-logger = logging.getLogger(__name__)
+# ✅ DO: Structured logging with key-value pairs
+from cityhive.infrastructure.logging import get_logger
 
-logger.info("Processing user %s", user_id)
-logger.error("Failed to save", extra={"user_id": user_id, "error": str(e)})
+logger = get_logger(__name__)
 
-# ❌ DON'T:
-print(f"Processing {user_id}")
-logger.info(f"Processing user {user_id}")
+logger.info("User created", user_id=12345, email="user@example.com")
+logger.warning("Rate limit exceeded", user_id=12345, limit=100, current=105)
+logger.error("Database connection failed", error="timeout", retry_count=3)
+
+# ✅ DO: Context binding for related operations
+user_logger = logger.bind(user_id=12345, session_id="abc-123")
+user_logger.info("Login attempt", success=True)
+user_logger.info("Page viewed", page="/dashboard")
+
+# ✅ DO: Exception logging with structured data
+try:
+    risky_operation()
+except Exception as e:
+    logger.exception(
+        "Operation failed",
+        operation="data_processing",
+        error_type=type(e).__name__,
+        user_id=user_id,
+    )
+
+# ❌ DON'T: String formatting or f-strings in logs
+logger.info(f"Processing user {user_id}")  # Bypasses structured logging
+logger.info("Processing user %s", user_id)  # Old format, not structured
+print(f"Debug: {some_value}")  # Never use print()
 ```
 
 ## Functions and Classes
@@ -129,16 +149,27 @@ logger.info(f"Processing user {user_id}")
 - **Middleware functions**: Follow aiohttp middleware pattern
 
 ```python
-# ✅ DO: Proper middleware pattern
+# ✅ DO: Proper middleware pattern with structured logging
+from cityhive.infrastructure.logging import get_logger
+
 @web.middleware
 async def logging_middleware(
     request: web.Request,
     handler: Handler
 ) -> web.StreamResponse:
+    logger = get_logger(__name__)
     start_time = request.loop.time()
+
     response = await handler(request)
     duration = request.loop.time() - start_time
-    logger.info("Request completed in %.3fs", duration)
+
+    logger.info(
+        "Request completed",
+        method=request.method,
+        path=request.path,
+        status=response.status,
+        duration_seconds=round(duration, 3),
+    )
     return response
 ```
 
@@ -147,10 +178,30 @@ async def logging_middleware(
 - **Absolute imports**: `from cityhive.domain import User`
 - **Group imports**: stdlib, third-party, local (Ruff handles this)
 - **No star imports**: `from module import *` forbidden
+- **Logging imports**: Always use `from cityhive.infrastructure.logging import get_logger`
+
+```python
+# ✅ DO: Proper import organization
+# Standard library imports
+import asyncio
+import json
+from datetime import datetime
+
+# Third-party imports
+from aiohttp import web
+from pydantic import BaseModel
+
+# First-party imports
+from cityhive.domain.models.user import User
+from cityhive.infrastructure.logging import get_logger
+
+logger = get_logger(__name__)
+```
 
 ---
 
 **Reference Implementation:**
 - See existing codebase for patterns
+- Structured logging documentation in [docs/logging.md](mdc:docs/logging.md)
 - Ruff configuration in [pyproject.toml](mdc:pyproject.toml)
 - Use Context7 for framework-specific patterns

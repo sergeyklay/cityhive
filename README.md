@@ -105,6 +105,10 @@ make migrate        # Run database migrations
 - **CI/CD**: Full automation with GitHub Actions
 - **Dependencies**: Automatically updated via Dependabot
 
+## Documentation
+
+- [Logging](./docs/logging.md)
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.

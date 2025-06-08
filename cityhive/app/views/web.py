@@ -4,15 +4,14 @@ Web views for HTML responses.
 These views handle the main web interface pages and return HTML responses.
 """
 
-import logging
-
 import aiohttp_jinja2
 from aiohttp import web
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from cityhive.infrastructure.logging import get_logger
 from cityhive.infrastructure.typedefs import db_key
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 @aiohttp_jinja2.template("index.html")

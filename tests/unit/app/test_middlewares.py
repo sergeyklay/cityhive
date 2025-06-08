@@ -1,8 +1,5 @@
 """Unit tests for cityhive.app.middlewares module."""
 
-import logging
-from unittest.mock import AsyncMock, patch
-
 import pytest
 from aiohttp import web
 from aiohttp.test_utils import make_mocked_request
@@ -16,66 +13,64 @@ from cityhive.app.middlewares import (
 )
 
 
-async def test_handle_404_returns_correct_status_and_template():
+async def test_handle_404_returns_correct_status_and_template(mocker):
+    mock_render = mocker.patch(
+        "cityhive.app.middlewares.aiohttp_jinja2.render_template"
+    )
+    mock_render.return_value = web.Response(text="Not Found", status=404)
     request = make_mocked_request("GET", "/nonexistent")
 
-    with patch(
+    response = await handle_404(request)
+
+    assert response.status == 404
+    mock_render.assert_called_once_with(
+        "404.html", request, {"path": "/nonexistent"}, status=404
+    )
+
+
+async def test_handle_404_logs_warning_with_path(mocker):
+    mock_logger = mocker.patch("cityhive.app.middlewares.logger")
+    mock_render = mocker.patch(
         "cityhive.app.middlewares.aiohttp_jinja2.render_template"
-    ) as mock_render:
-        mock_render.return_value = web.Response(text="Not Found", status=404)
-
-        response = await handle_404(request)
-
-        assert response.status == 404
-        mock_render.assert_called_once_with(
-            "404.html", request, {"path": "/nonexistent"}, status=404
-        )
-
-
-async def test_handle_404_logs_warning_with_path(caplog):
+    )
+    mock_render.return_value = web.Response(text="Not Found", status=404)
     request = make_mocked_request("GET", "/missing-page")
 
-    with patch(
+    await handle_404(request)
+
+    mock_logger.warning.assert_called_once_with(
+        "404 error", path="/missing-page", method="GET"
+    )
+
+
+async def test_handle_500_returns_correct_status_and_template(mocker):
+    mock_render = mocker.patch(
         "cityhive.app.middlewares.aiohttp_jinja2.render_template"
-    ) as mock_render:
-        mock_render.return_value = web.Response(text="Not Found", status=404)
-
-        with caplog.at_level(logging.WARNING):
-            await handle_404(request)
-
-        assert "404 error for path: /missing-page" in caplog.text
-        assert caplog.records[0].levelname == "WARNING"
-
-
-async def test_handle_500_returns_correct_status_and_template():
+    )
+    mock_render.return_value = web.Response(text="Server Error", status=500)
     request = make_mocked_request("POST", "/api/endpoint")
 
-    with patch(
+    response = await handle_500(request)
+
+    assert response.status == 500
+    mock_render.assert_called_once_with(
+        "500.html", request, {"path": "/api/endpoint"}, status=500
+    )
+
+
+async def test_handle_500_logs_error_with_path(mocker):
+    mock_logger = mocker.patch("cityhive.app.middlewares.logger")
+    mock_render = mocker.patch(
         "cityhive.app.middlewares.aiohttp_jinja2.render_template"
-    ) as mock_render:
-        mock_render.return_value = web.Response(text="Server Error", status=500)
-
-        response = await handle_500(request)
-
-        assert response.status == 500
-        mock_render.assert_called_once_with(
-            "500.html", request, {"path": "/api/endpoint"}, status=500
-        )
-
-
-async def test_handle_500_logs_error_with_path(caplog):
+    )
+    mock_render.return_value = web.Response(text="Server Error", status=500)
     request = make_mocked_request("GET", "/error-endpoint")
 
-    with patch(
-        "cityhive.app.middlewares.aiohttp_jinja2.render_template"
-    ) as mock_render:
-        mock_render.return_value = web.Response(text="Server Error", status=500)
+    await handle_500(request)
 
-        with caplog.at_level(logging.ERROR):
-            await handle_500(request)
-
-        assert "500 error for path: /error-endpoint" in caplog.text
-        assert caplog.records[0].levelname == "ERROR"
+    mock_logger.error.assert_called_once_with(
+        "500 error", path="/error-endpoint", method="GET"
+    )
 
 
 async def test_create_error_middleware_handles_successful_request():
@@ -120,7 +115,9 @@ async def test_create_error_middleware_reraises_http_exception_without_override(
         await error_middleware(request, mock_handler)
 
 
-async def test_create_error_middleware_handles_unexpected_exception(caplog):
+async def test_create_error_middleware_handles_unexpected_exception(mocker):
+    mock_logger = mocker.patch("cityhive.app.middlewares.logger")
+
     async def mock_handler(request):
         raise ValueError("Unexpected error")
 
@@ -130,90 +127,124 @@ async def test_create_error_middleware_handles_unexpected_exception(caplog):
     error_middleware = create_error_middleware({500: custom_500_handler})
     request = make_mocked_request("GET", "/error")
 
-    with caplog.at_level(logging.ERROR):
-        response = await error_middleware(request, mock_handler)
+    response = await error_middleware(request, mock_handler)
 
     assert response.status == 500
     assert isinstance(response, web.Response)
     assert response.body == b"Custom 500"
-    assert "Unhandled exception in request handler for GET /error" in caplog.text
+    mock_logger.exception.assert_called_once_with(
+        "Unhandled exception in request handler",
+        method="GET",
+        path="/error",
+        error="Unexpected error",
+        error_type="ValueError",
+    )
 
 
-async def test_create_error_middleware_uses_default_500_handler_when_no_override():
+async def test_create_error_middleware_uses_default_500_handler_when_no_override(
+    mocker,
+):
+    mock_handle_500 = mocker.patch("cityhive.app.middlewares.handle_500")
+    mock_handle_500.return_value = web.Response(text="Default 500", status=500)
+
     async def mock_handler(request):
         raise RuntimeError("Something went wrong")
 
     error_middleware = create_error_middleware({})
     request = make_mocked_request("POST", "/api/data")
 
-    with patch("cityhive.app.middlewares.handle_500") as mock_handle_500:
-        mock_handle_500.return_value = web.Response(text="Default 500", status=500)
+    response = await error_middleware(request, mock_handler)
 
-        response = await error_middleware(request, mock_handler)
-
-        assert response.status == 500
-        mock_handle_500.assert_called_once_with(request)
+    assert response.status == 500
+    mock_handle_500.assert_called_once_with(request)
 
 
-async def test_logging_middleware_logs_successful_request(caplog):
+async def test_logging_middleware_logs_successful_request(mocker):
+    mock_get_logger = mocker.patch("cityhive.app.middlewares.get_logger")
+    mocker.patch("cityhive.app.middlewares.clear_request_context")
+    mocker.patch("cityhive.app.middlewares.bind_request_context")
+
+    mock_logger = mocker.MagicMock()
+    mock_bound_logger = mocker.MagicMock()
+    mock_logger.bind.return_value = mock_bound_logger
+    mock_get_logger.return_value = mock_logger
+
     async def mock_handler(request):
         return web.Response(text="OK", status=200)
 
     request = make_mocked_request("GET", "/test", headers={"Host": "localhost"})
 
-    with caplog.at_level(logging.INFO):
-        response = await logging_middleware(request, mock_handler)
+    response = await logging_middleware(request, mock_handler)
 
     assert response.status == 200
-    assert len(caplog.records) == 2
+    assert mock_bound_logger.info.call_count == 2
 
-    start_record = caplog.records[0]
-    assert "Request started: GET /test" in start_record.message
-    assert start_record.method == "GET"
-    assert start_record.path == "/test"
+    start_call = mock_bound_logger.info.call_args_list[0]
+    assert start_call[0][0] == "Request started"
+    assert start_call[1]["method"] == "GET"
+    assert start_call[1]["path"] == "/test"
 
-    complete_record = caplog.records[1]
-    assert "Request completed: GET /test -> 200" in complete_record.message
-    assert complete_record.status == 200
-    assert "duration" in complete_record.__dict__
+    complete_call = mock_bound_logger.info.call_args_list[1]
+    assert complete_call[0][0] == "Request completed"
+    assert complete_call[1]["method"] == "GET"
+    assert complete_call[1]["path"] == "/test"
+    assert complete_call[1]["status"] == 200
+    assert "duration_seconds" in complete_call[1]
 
 
-async def test_logging_middleware_logs_failed_request(caplog):
+async def test_logging_middleware_logs_failed_request(mocker):
+    mock_get_logger = mocker.patch("cityhive.app.middlewares.get_logger")
+    mocker.patch("cityhive.app.middlewares.clear_request_context")
+    mocker.patch("cityhive.app.middlewares.bind_request_context")
+
+    mock_logger = mocker.MagicMock()
+    mock_bound_logger = mocker.MagicMock()
+    mock_logger.bind.return_value = mock_bound_logger
+    mock_get_logger.return_value = mock_logger
+
     async def mock_handler(request):
         raise ValueError("Handler error")
 
     request = make_mocked_request("POST", "/api/users")
 
-    with (
-        caplog.at_level(logging.INFO),
-        pytest.raises(ValueError, match="Handler error"),
-    ):
+    with pytest.raises(ValueError, match="Handler error"):
         await logging_middleware(request, mock_handler)
 
-    assert len(caplog.records) == 2
+    assert mock_bound_logger.info.call_count == 1
+    assert mock_bound_logger.error.call_count == 1
 
-    start_record = caplog.records[0]
-    assert "Request started: POST /api/users" in start_record.message
+    start_call = mock_bound_logger.info.call_args_list[0]
+    assert start_call[0][0] == "Request started"
 
-    fail_record = caplog.records[1]
-    assert "Request failed: POST /api/users" in fail_record.message
-    assert fail_record.levelname == "ERROR"
-    assert "Handler error" in fail_record.error
+    error_call = mock_bound_logger.error.call_args_list[0]
+    assert error_call[0][0] == "Request failed"
+    assert error_call[1]["method"] == "POST"
+    assert error_call[1]["path"] == "/api/users"
+    assert error_call[1]["error"] == "Handler error"
+    assert error_call[1]["error_type"] == "ValueError"
 
 
-async def test_logging_middleware_measures_request_duration(caplog):
+async def test_logging_middleware_measures_request_duration(mocker):
+    mock_get_logger = mocker.patch("cityhive.app.middlewares.get_logger")
+    mocker.patch("cityhive.app.middlewares.clear_request_context")
+    mocker.patch("cityhive.app.middlewares.bind_request_context")
+
+    mock_logger = mocker.MagicMock()
+    mock_bound_logger = mocker.MagicMock()
+    mock_logger.bind.return_value = mock_bound_logger
+    mock_get_logger.return_value = mock_logger
+
     async def slow_handler(request):
         return web.Response(text="Slow response", status=200)
 
     request = make_mocked_request("GET", "/slow")
 
-    with caplog.at_level(logging.INFO):
-        await logging_middleware(request, slow_handler)
+    await logging_middleware(request, slow_handler)
 
-    complete_record = caplog.records[1]
-    assert hasattr(complete_record, "duration")
-    assert isinstance(complete_record.duration, float)
-    assert complete_record.duration >= 0
+    complete_call = mock_bound_logger.info.call_args_list[1]
+    assert "duration_seconds" in complete_call[1]
+    assert isinstance(complete_call[1]["duration_seconds"], float)
+    assert complete_call[1]["duration_seconds"] >= 0
 
 
 async def test_logging_middleware_passes_through_response_unchanged():
@@ -242,23 +273,20 @@ def test_setup_middlewares_adds_correct_middlewares_in_order():
     setup_middlewares(app)
 
     assert len(app.middlewares) == 2
-
-    middlewares = list(app.middlewares)
-    assert middlewares[0] is logging_middleware
-    assert callable(middlewares[1])
+    assert app.middlewares[0] is logging_middleware
+    assert callable(app.middlewares[1])
 
 
-def test_setup_middlewares_configures_error_middleware_correctly():
+def test_setup_middlewares_configures_error_middleware_correctly(mocker):
+    mock_create = mocker.patch("cityhive.app.middlewares.create_error_middleware")
+    mock_middleware = mocker.AsyncMock()
+    mock_create.return_value = mock_middleware
     app = web.Application()
 
-    with patch("cityhive.app.middlewares.create_error_middleware") as mock_create:
-        mock_middleware = AsyncMock()
-        mock_create.return_value = mock_middleware
+    setup_middlewares(app)
 
-        setup_middlewares(app)
-
-        mock_create.assert_called_once_with({404: handle_404, 500: handle_500})
-        assert mock_middleware in app.middlewares
+    mock_create.assert_called_once_with({404: handle_404, 500: handle_500})
+    assert app.middlewares[1] is mock_middleware
 
 
 @pytest.mark.integration
@@ -280,7 +308,13 @@ async def test_middleware_integration_with_aiohttp_client(aiohttp_client):
 
 
 @pytest.mark.integration
-async def test_middleware_integration_exception_handling(aiohttp_client, caplog):
+async def test_middleware_integration_exception_handling(aiohttp_client, mocker):
+    mock_logger = mocker.patch("cityhive.app.middlewares.logger")
+    mock_render = mocker.patch(
+        "cityhive.app.middlewares.aiohttp_jinja2.render_template"
+    )
+    mock_render.return_value = web.Response(text="Server Error", status=500)
+
     async def error_handler(request):
         raise ValueError("Test exception")
 
@@ -290,11 +324,17 @@ async def test_middleware_integration_exception_handling(aiohttp_client, caplog)
 
     client = await aiohttp_client(app)
 
-    with caplog.at_level(logging.ERROR):
-        resp = await client.get("/error")
+    response = await client.get("/error")
 
-    assert resp.status == 500
-    assert "Unhandled exception in request handler for GET /error" in caplog.text
+    assert response.status == 500
+
+    mock_logger.exception.assert_called_once_with(
+        "Unhandled exception in request handler",
+        method="GET",
+        path="/error",
+        error="Test exception",
+        error_type="ValueError",
+    )
 
 
 @pytest.mark.parametrize(
@@ -307,24 +347,33 @@ async def test_middleware_integration_exception_handling(aiohttp_client, caplog)
     ],
 )
 async def test_logging_middleware_handles_different_methods_and_paths(
-    method: str, path: str, expected_method: str, expected_path: str, caplog
+    method: str, path: str, expected_method: str, expected_path: str, mocker
 ):
+    mock_get_logger = mocker.patch("cityhive.app.middlewares.get_logger")
+    mocker.patch("cityhive.app.middlewares.clear_request_context")
+    mocker.patch("cityhive.app.middlewares.bind_request_context")
+
+    mock_logger = mocker.MagicMock()
+    mock_bound_logger = mocker.MagicMock()
+    mock_logger.bind.return_value = mock_bound_logger
+    mock_get_logger.return_value = mock_logger
+
     async def mock_handler(request):
-        return web.Response(text="Response", status=200)
+        return web.Response(text="OK", status=200)
 
     request = make_mocked_request(method, path)
 
-    with caplog.at_level(logging.INFO):
-        await logging_middleware(request, mock_handler)
+    await logging_middleware(request, mock_handler)
 
-    start_record = caplog.records[0]
-    complete_record = caplog.records[1]
+    start_call = mock_bound_logger.info.call_args_list[0]
+    assert start_call[0][0] == "Request started"
+    assert start_call[1]["method"] == expected_method
+    assert start_call[1]["path"] == expected_path
 
-    assert f"Request started: {expected_method} {expected_path}" in start_record.message
-    assert (
-        f"Request completed: {expected_method} {expected_path} -> 200"
-        in complete_record.message
-    )
+    complete_call = mock_bound_logger.info.call_args_list[1]
+    assert complete_call[0][0] == "Request completed"
+    assert complete_call[1]["method"] == expected_method
+    assert complete_call[1]["path"] == expected_path
 
 
 @pytest.mark.parametrize(
