@@ -13,15 +13,6 @@ from cityhive.app.middlewares import (
 )
 
 
-@pytest.fixture(autouse=True)
-def suppress_middleware_logging(mocker):
-    """
-    Suppress logger output for all middleware tests by default.
-    """
-    mocker.patch("cityhive.app.middlewares.logger")
-    mocker.patch("cityhive.app.middlewares.get_logger")
-
-
 async def test_handle_404_returns_correct_status_and_template(mocker):
     mock_render = mocker.patch(
         "cityhive.app.middlewares.aiohttp_jinja2.render_template"
@@ -309,11 +300,10 @@ async def test_middleware_integration_with_aiohttp_client(aiohttp_client):
 
     client = await aiohttp_client(app)
 
-    resp = await client.get("/")
-
-    assert resp.status == 200
-    text = await resp.text()
-    assert text == "Hello, World!"
+    async with client.get("/") as resp:
+        assert resp.status == 200
+        text = await resp.text()
+        assert text == "Hello, World!"
 
 
 @pytest.mark.integration
@@ -333,9 +323,8 @@ async def test_middleware_integration_exception_handling(aiohttp_client, mocker)
 
     client = await aiohttp_client(app)
 
-    response = await client.get("/error")
-
-    assert response.status == 500
+    async with client.get("/error") as response:
+        assert response.status == 500
 
     mock_logger.exception.assert_called_once_with(
         "Unhandled exception in request handler",

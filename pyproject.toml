@@ -58,6 +58,10 @@ markers = [
 filterwarnings = [
     "ignore:cannot collect test class.*because it has a __init__ constructor:pytest.PytestCollectionWarning",
 ]
+# Suppress logging output during tests for cleaner output
+log_cli = false
+log_level = "WARNING"
+log_cli_level = "WARNING"
 
 [tool.coverage.report]
 # Set the number of decimal places in coverage percentage

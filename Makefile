@@ -7,7 +7,7 @@ PKG_DIR := $(notdir $(CURDIR))
 test:
 	@echo $(CS)Running tests for package: $(PKG_DIR)$(CE)
 	uv run --frozen coverage erase
-	uv run --frozen coverage run -m pytest -svv ./tests
+	uv run --frozen coverage run -m pytest -v ./tests
 	@echo
 
 .PHONY: ccov
