@@ -46,8 +46,7 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(["user_id"], ["users.id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("id"),
     )
-    # Note: GIST index is automatically created by GeoAlchemy2 for Geography columns
-    # No need to create it explicitly
+
     op.create_index(
         op.f("ix_hives_installed_at"), "hives", ["installed_at"], unique=False
     )
@@ -58,5 +57,4 @@ def downgrade() -> None:
     """Downgrade schema."""
     op.drop_index(op.f("ix_hives_user_id"), table_name="hives")
     op.drop_index(op.f("ix_hives_installed_at"), table_name="hives")
-    # Note: GIST index is automatically dropped by GeoAlchemy2 when table is dropped
     op.drop_table("hives")
