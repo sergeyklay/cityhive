@@ -1,360 +1,892 @@
 # Contributing to CityHive
 
-Welcome to CityHive! This project serves as an experimental playground for modern Python web development patterns, tools, and practices. Whether you're here to learn, experiment, or contribute, this guide will help you get started.
+Welcome to CityHive! This project serves as an experimental playground for modern Python web development patterns, tools, and practices. Whether you're here to explore, learn, experiment, or contribute, this guide will help you navigate the codebase effectively.
 
-## 🧪 Project Philosophy
+## Table of Contents
 
-CityHive is intentionally experimental and educational. Our goals are to:
+- [Project Philosophy](#project-philosophy)
+- [Project Structure](#project-structure)
+- [Getting Started](#getting-started)
+  - [Prerequisites](#prerequisites)
+  - [Development Environment Setup](#development-environment-setup)
+  - [Working with the Project](#working-with-the-project)
+- [Development Workflow](#development-workflow)
+  - [Creating a New Feature](#creating-a-new-feature)
+  - [Bug Fixes](#bug-fixes)
+  - [Code Style and Standards](#code-style-and-standards)
+    - [General Python Standards](#general-python-standards)
+    - [Meaningful Names](#meaningful-names)
+    - [Type Hints Usage](#type-hints-usage)
+    - [Docstrings](#docstrings)
+    - [Comments](#comments)
+    - [Exception Handling](#exception-handling)
+    - [Async Patterns](#async-patterns)
+    - [Resource Management](#resource-management)
+    - [Logging Guidelines](#logging-guidelines)
+    - [Import Organization](#import-organization)
+  - [Testing Guidelines](#testing-guidelines)
+  - [Documentation Standards](#documentation-standards)
+- [Architecture Guidelines](#architecture-guidelines)
+  - [Clean Architecture Principles](#clean-architecture-principles)
+  - [aiohttp Patterns](#aiohttp-patterns)
+  - [Database Patterns](#database-patterns)
+- [Experimental Areas](#experimental-areas)
+- [Pull Request Process](#pull-request-process)
+- [Code Review Guidelines](#code-review-guidelines)
+- [Dependency Management](#dependency-management)
+- [AI Integration](#ai-integration)
+- [Troubleshooting Guide](#troubleshooting-guide)
+- [Additional Resources](#additional-resources)
 
-- **Explore**: Test modern Python tools, frameworks, and architectural patterns
-- **Learn**: Provide a realistic codebase for studying contemporary web development
+## Project Philosophy
+
+CityHive is intentionally experimental and educational, serving as a comprehensive technology playground. Our goals are to:
+
+- **Explore**: Test cutting-edge Python tools, frameworks, and architectural patterns
+- **Learn**: Provide a realistic codebase for studying modern web development practices
 - **Share**: Demonstrate best practices and emerging patterns in the Python ecosystem
-- **Experiment**: Try new approaches without the constraints of production requirements
+- **Experiment**: Try innovative approaches without production constraints
+- **Demonstrate**: Showcase clean architecture and domain-driven design in Python
 
-## 🚀 Getting Started
+## Project Structure
+
+CityHive follows clean architecture principles with strict layer separation:
+
+```
+cityhive/
+├── cityhive/                    # Main application package
+│   ├── app/                     # Web Layer
+│   │   ├── routes/              # HTTP routes and handlers
+│   │   ├── middleware/          # Request/response middleware
+│   │   ├── views/               # Template rendering and responses
+│   │   └── main.py              # Application factory
+│   ├── domain/                  # Domain Layer
+│   │   ├── models/              # Domain entities and value objects
+│   │   ├── services/            # Business logic and use cases
+│   │   └── interfaces/          # Abstract interfaces and protocols
+│   ├── infrastructure/          # Infrastructure Layer
+│   │   ├── database/            # Database models and repositories
+│   │   ├── config/              # Configuration management
+│   │   └── external/            # External service integrations
+│   ├── static/                  # Static assets (CSS, JS, images)
+│   └── templates/               # Jinja2 HTML templates
+├── tests/                       # Test suites
+│   ├── unit/                    # Unit tests (fast, isolated)
+│   └── integration/             # Integration tests (realistic scenarios)
+├── migration/                   # Alembic database migrations
+├── scripts/                     # Utility and maintenance scripts
+└── .cursor/                     # AI integration configuration
+```
+
+**Layer Dependencies** (following clean architecture):
+- **Web Layer** → Domain Layer
+- **Infrastructure Layer** → Domain Layer
+- **Domain Layer** → External dependencies (isolated)
+
+## Getting Started
 
 ### Prerequisites
 
-- **Python 3.12+**: We use the latest Python features and type hints
+- **Python 3.12+**: Latest Python with modern async capabilities
 - **PostgreSQL 13+**: With PostGIS extension for spatial data
-- **Docker**: For containerized development (optional but recommended)
-- **Git**: For version control
+- **Docker & Docker Compose**: For containerized development
+- **Git**: Version control system
+- **uv**: Ultra-fast Python package manager
 
-### Development Setup
+### Development Environment Setup
 
-1. **Clone and enter the repository**
+1. **Clone the repository**:
    ```bash
    git clone https://github.com/sergeyklay/cityhive.git
    cd cityhive
    ```
 
-2. **Install uv** (if not already installed)
+2. **Install uv** (if not already installed):
    ```bash
    curl -LsSf https://astral.sh/uv/install.sh | sh
    ```
 
-3. **Install all dependencies**
+3. **Install all dependencies**:
    ```bash
    uv sync --all-groups
    ```
 
-4. **Set up environment configuration**
+4. **Set up environment configuration**:
    ```bash
    cp .env.example .env
-   # Edit .env with your local settings
+   # Edit .env with your local configuration
    ```
 
-5. **Start app (with Docker)**
+5. **Start app (with Docker)**:
    ```bash
    docker compose up --build
    ```
 
-## 🏗️ Project Architecture
+### Working with the Project
 
-### Clean Architecture Layers
+**Development Commands**:
 
-```
-┌─────────────────────────────────────┐
-│           Web Layer (app/)          │  ← aiohttp routes, middleware, views
-├─────────────────────────────────────┤
-│         Domain Layer (domain/)      │  ← Business logic, services, models
-├─────────────────────────────────────┤
-│    Infrastructure (infrastructure/) │  ← Database, external APIs, config
-└─────────────────────────────────────┘
-```
-
-- **Web Layer**: HTTP handling, request/response processing, view logic
-- **Domain Layer**: Core business logic, domain models, use cases
-- **Infrastructure Layer**: Database access, external services, configuration
-
-### Key Patterns We're Exploring
-
-- **Dependency Injection**: Using aiohttp's `AppKey` for type-safe dependency management
-- **Async Throughout**: Full async/await from web layer to database
-- **Type Safety**: Comprehensive type hints with Pydantic models
-- **Resource Management**: Proper cleanup with async context managers
-- **Domain-Driven Design**: Rich domain models with business logic
-
-## 🔧 Development Workflow
-
-### Code Standards
-
-We maintain high code quality through automated tooling:
-
-#### Formatting & Linting
 ```bash
-# Auto-format code (mandatory before commits)
+# Format code (mandatory before commits)
 make format
 
-# Check formatting without changes
-make format-check
+# Check code quality
+make lint format-check
 
-# Run linter checks
-make lint
-```
-
-#### Type Checking
-- All code must have proper type hints
-- Use `mypy` for static type checking
-- Pydantic for runtime validation
-
-#### Testing Requirements
-```bash
-# Run all tests with coverage
+# Run tests with coverage
 make test
 
-# View coverage report
+# Generate coverage reports
 make ccov
+
+# Run database migrations
+make migrate
+
+# Start application locally (this needs database container to be up)
+uv run python -m cityhive.app
 ```
 
-**Testing Standards:**
-- Minimum 90% test coverage required
-- Use pytest with async support
-- Write both unit and integration tests
-- Mock external dependencies appropriately
+**Docker Operations**:
 
-### Code Style Guidelines
+```bash
+# Start all services
+docker compose up --build
 
-#### Python Code
-- **Line length**: 88 characters (Black default)
-- **Imports**: Sorted alphabetically, grouped by type
-- **Type hints**: Required for all functions and methods
-- **Docstrings**: Google-style for public APIs
-- **Error handling**: Explicit exception handling with context
+# Start specific service
+docker compose up postgres
 
-#### Example Function
+# View logs
+docker compose logs -f cityhive_app
+
+# Execute commands in container
+docker compose exec cityhive_app bash
+```
+
+## Development Workflow
+
+### Creating a New Feature
+
+1. **Create a feature branch**:
+   ```bash
+   git checkout -b feature/descriptive-feature-name
+   ```
+
+2. **Follow clean architecture**:
+   - Add domain logic in `domain/` layer
+   - Create web handlers in `app/` layer
+   - Implement data access in `infrastructure/` layer
+
+3. **Write comprehensive tests**:
+   ```bash
+   # Add unit tests
+   tests/unit/domain/test_your_feature.py
+
+   # Add integration tests
+   tests/integration/test_your_feature.py
+   ```
+
+4. **Verify quality**:
+   ```bash
+   make format lint test
+   ```
+
+### Bug Fixes
+
+1. **Create a bug fix branch**:
+   ```bash
+   git checkout -b fix/descriptive-bug-name
+   ```
+
+2. **Write regression tests first**:
+   - Add tests that would have caught the bug
+   - Verify tests fail without the fix
+
+3. **Implement minimal fix**:
+   - Keep changes focused on the specific issue
+   - Avoid refactoring unrelated code
+
+### Code Style and Standards
+
+#### General Python Standards
+
+- **Python Version**: Use Python 3.12 features and syntax
+- **Line Length**: 88 characters maximum (ruff/black default)
+- **Indentation**: 4 spaces, never tabs
+- **Naming Conventions**:
+  - Classes: `CamelCase`
+  - Functions/variables: `snake_case`
+  - Constants: `UPPER_SNAKE_CASE`
+  - Private attributes: `_single_underscore`
+
+#### Meaningful Names
+
+Use descriptive names that clearly communicate intent:
+
 ```python
-async def create_beehive(
+# ✅ DO: Clear, descriptive names
+async def create_beehive_inspection(
     session: AsyncSession,
-    hive_data: BeehiveCreateModel,
-    user_id: int,
-) -> BeehiveModel:
-    """Create a new beehive in the system.
+    beehive_id: int,
+    inspector_notes: str,
+    health_score: float,
+) -> InspectionModel:
+    """Create a new beehive inspection record."""
+
+# ❌ DON'T: Cryptic abbreviations
+async def cr_bh_insp(s, bid, n, hs):
+    """Create inspection."""
+```
+
+#### Type Hints Usage
+
+Use modern type hints following PEP 604 and PEP 585:
+
+```python
+# ✅ DO: Modern union syntax and built-in generics
+from collections.abc import Sequence
+
+def process_beehives(
+    hives: list[BeehiveModel],
+    filters: dict[str, str | int] | None = None,
+) -> Sequence[ProcessedHive]:
+    """Process beehives with optional filters."""
+
+# ❌ DON'T: Legacy typing imports
+from typing import List, Dict, Optional, Union
+
+def process_beehives(
+    hives: List[BeehiveModel],
+    filters: Optional[Dict[str, Union[str, int]]] = None,
+) -> List[ProcessedHive]:
+```
+
+#### Docstrings
+
+Use Google-style docstrings for all public APIs:
+
+```python
+async def schedule_inspection(
+    session: AsyncSession,
+    beehive_id: int,
+    inspection_date: datetime,
+    inspector_id: int,
+) -> InspectionSchedule:
+    """Schedule a beehive inspection.
 
     Args:
         session: Database session for the operation
-        hive_data: Validated hive creation data
-        user_id: ID of the user creating the hive
+        beehive_id: ID of the beehive to inspect
+        inspection_date: When the inspection should occur
+        inspector_id: ID of the assigned inspector
 
     Returns:
-        The created beehive model
+        The created inspection schedule
 
     Raises:
-        BeehiveValidationError: If hive data is invalid
-        DatabaseError: If the database operation fails
+        BeehiveNotFoundError: If the beehive doesn't exist
+        InspectorUnavailableError: If inspector is not available
+        ValidationError: If the inspection date is invalid
     """
-    # Implementation here
 ```
 
-### Dependency Management
+#### Comments
 
-We use **uv** exclusively for dependency management:
+Avoid obvious comments. Target audience is senior Python developers:
+
+```python
+# ✅ DO: Explain complex business logic or non-obvious decisions
+# Use Haversine formula for accurate distance calculation with spatial coordinates
+distance = calculate_haversine_distance(hive_location, inspector_location)
+
+# Apply temperature correction factor for winter inspections
+if inspection_date.month in (12, 1, 2):
+    health_score *= WINTER_ADJUSTMENT_FACTOR
+
+# ❌ DON'T: State the obvious
+beehive_count += 1  # Increment beehive count
+for hive in hives:  # Loop through hives
+    print(hive.name)  # Print hive name
+```
+
+#### Exception Handling
+
+Always use explicit exception chaining for better debugging:
+
+```python
+# ✅ DO: Preserve original exception context
+async def fetch_beehive_data(hive_id: int) -> BeehiveData:
+    try:
+        response = await http_client.get(f"/api/hives/{hive_id}")
+        return BeehiveData.model_validate(response.json())
+    except httpx.HTTPError as e:
+        raise BeehiveAPIError(f"Failed to fetch hive {hive_id}") from e
+    except ValidationError as e:
+        raise BeehiveDataError(f"Invalid data for hive {hive_id}") from e
+
+# ❌ DON'T: Lose original exception context
+async def fetch_beehive_data(hive_id: int) -> BeehiveData:
+    try:
+        response = await http_client.get(f"/api/hives/{hive_id}")
+        return BeehiveData.model_validate(response.json())
+    except Exception:
+        raise BeehiveAPIError("Something went wrong")
+```
+
+#### Async Patterns
+
+Follow proper async/await patterns throughout:
+
+```python
+# ✅ DO: Proper async context managers and resource cleanup
+async def process_sensor_data(sensor_id: int) -> ProcessingResult:
+    async with get_database_session() as session:
+        sensor = await session.get(SensorModel, sensor_id)
+        if not sensor:
+            raise SensorNotFoundError(f"Sensor {sensor_id} not found")
+
+        async with httpx.AsyncClient() as client:
+            raw_data = await client.get(sensor.endpoint_url)
+            processed_data = await process_raw_sensor_data(raw_data.json())
+
+        await session.merge(processed_data)
+        await session.commit()
+        return ProcessingResult(success=True, sensor_id=sensor_id)
+
+# ❌ DON'T: Mix sync and async or forget resource cleanup
+def process_sensor_data(sensor_id: int):
+    session = get_database_session()  # Missing async context
+    client = httpx.Client()  # Sync client in async context
+    # ... processing without proper cleanup
+```
+
+#### Resource Management
+
+Use context managers for all resource management:
+
+```python
+# ✅ DO: Proper resource management
+async def backup_beehive_data(hive_id: int) -> None:
+    async with get_database_session() as session:
+        hive_data = await session.execute(
+            select(BeehiveModel).where(BeehiveModel.id == hive_id)
+        )
+
+        with open(f"backup_hive_{hive_id}.json", "w") as backup_file:
+            json.dump(hive_data.scalars().first().to_dict(), backup_file)
+
+# ❌ DON'T: Manual resource management
+async def backup_beehive_data(hive_id: int) -> None:
+    session = get_database_session()
+    backup_file = open(f"backup_hive_{hive_id}.json", "w")
+    # ... forget to close resources
+```
+
+#### Logging Guidelines
+
+Use proper logging patterns without f-strings:
+
+```python
+import logging
+
+logger = logging.getLogger(__name__)
+
+# ✅ DO: Parameterized logging with structured data
+logger.info("Processing beehive inspection", extra={
+    "beehive_id": hive_id,
+    "inspector_id": inspector_id,
+    "inspection_type": inspection_type,
+})
+
+logger.error("Failed to process sensor data for hive %s", hive_id, exc_info=True)
+
+# ❌ DON'T: f-strings in logging (bypasses lazy evaluation)
+logger.info(f"Processing beehive {hive_id} inspection")
+logger.error(f"Failed to process sensor data for hive {hive_id}")
+```
+
+#### Import Organization
+
+Organize imports in clear groups:
+
+```python
+# Standard library imports
+import asyncio
+import json
+import logging
+from datetime import datetime, timedelta
+from pathlib import Path
+
+# Third-party imports
+import httpx
+from aiohttp import web
+from pydantic import BaseModel, ValidationError
+from sqlalchemy.ext.asyncio import AsyncSession
+
+# First-party imports
+from cityhive.domain.models.beehive import BeehiveModel
+from cityhive.domain.services.inspection import InspectionService
+from cityhive.infrastructure.database.session import get_session
+```
+
+### Testing Guidelines
+
+Write comprehensive tests following modern pytest practices:
+
+#### Test Structure and Style
+
+```python
+# ✅ DO: Clear, focused test with descriptive name
+@pytest.mark.parametrize(
+    "temperature,humidity,expected_health_score",
+    [
+        (25.0, 60.0, 0.95),  # Optimal conditions
+        (35.0, 80.0, 0.65),  # High temperature and humidity
+        (10.0, 30.0, 0.45),  # Cold and dry conditions
+    ],
+)
+async def test_calculate_beehive_health_score_handles_various_conditions(
+    temperature: float,
+    humidity: float,
+    expected_health_score: float,
+):
+    # Arrange
+    sensor_data = SensorData(temperature=temperature, humidity=humidity)
+
+    # Act
+    health_score = calculate_beehive_health_score(sensor_data)
+
+    # Assert
+    assert abs(health_score - expected_health_score) < 0.01
+
+# ❌ DON'T: Generic test names or complex test logic
+def test_health_calculation():
+    # Multiple assertions testing different scenarios
+    assert calculate_beehive_health_score(...) == 0.95
+    assert calculate_beehive_health_score(...) == 0.65
+    # ... more assertions
+```
+
+#### Async Testing
+
+```python
+# ✅ DO: Proper async test with realistic mocking
+@pytest.mark.asyncio
+async def test_create_inspection_saves_to_database(
+    mock_session: AsyncMock,
+    sample_beehive: BeehiveModel,
+):
+    # Arrange
+    inspection_data = InspectionCreateModel(
+        beehive_id=sample_beehive.id,
+        notes="Healthy colony with active queen",
+        health_score=0.89,
+    )
+
+    # Act
+    result = await create_inspection(mock_session, inspection_data)
+
+    # Assert
+    mock_session.add.assert_called_once()
+    mock_session.commit.assert_called_once()
+    assert result.beehive_id == sample_beehive.id
+    assert result.health_score == 0.89
+```
+
+#### Test Organization
+
+- **Unit Tests**: Fast, isolated tests for individual functions
+- **Integration Tests**: Test interactions between components
+- **Mark slow tests**: Use `@pytest.mark.slow` for database-dependent tests
 
 ```bash
-# Add a new dependency
-uv add package-name
+# Run all tests
+make test
 
-# Add a development dependency
-uv add --group dev package-name
+# Run only fast tests
+uv run pytest -m "not slow"
 
-# Add a testing dependency
-uv add --group testing package-name
+# Run specific test file
+uv run pytest tests/unit/domain/test_beehive_service.py
 
-# Update dependencies
-uv sync
+# Run with coverage
+make test ccov
 ```
 
-**Never use pip directly** - this ensures consistent dependency resolution and lockfile management.
+### Documentation Standards
 
-## 🧪 Experimental Areas
+- **Code Documentation**: Google-style docstrings for all public APIs
+- **API Documentation**: Auto-generated from type hints and docstrings
+- **Architecture Documentation**: High-level design decisions and patterns
+- **README Updates**: Keep installation and usage instructions current
+
+## Architecture Guidelines
+
+### Clean Architecture Principles
+
+#### Layer Responsibilities
+
+**Web Layer (`app/`)**:
+- HTTP request/response handling
+- Input validation and serialization
+- Template rendering
+- Middleware and routing
+
+```python
+# app/routes/beehive.py
+async def create_beehive_handler(request: web.Request) -> web.Response:
+    """Handle beehive creation requests."""
+    try:
+        # Extract and validate input
+        data = await request.json()
+        create_data = BeehiveCreateModel.model_validate(data)
+
+        # Delegate to domain service
+        service = request.app[BeehiveServiceKey]
+        beehive = await service.create_beehive(create_data)
+
+        # Return response
+        return web.json_response(beehive.model_dump())
+    except ValidationError as e:
+        return web.json_response({"errors": e.errors()}, status=400)
+```
+
+**Domain Layer (`domain/`)**:
+- Business logic and rules
+- Domain entities and value objects
+- Use cases and services
+- Abstract interfaces
+
+```python
+# domain/services/beehive.py
+class BeehiveService:
+    """Service for beehive business operations."""
+
+    def __init__(self, repository: BeehiveRepository):
+        self._repository = repository
+
+    async def create_beehive(self, data: BeehiveCreateModel) -> BeehiveModel:
+        """Create a new beehive with business validation."""
+        # Business rule: Maximum 10 hives per location
+        existing_count = await self._repository.count_by_location(data.location)
+        if existing_count >= 10:
+            raise TooManyHivesError("Maximum 10 hives per location")
+
+        beehive = BeehiveModel(
+            name=data.name,
+            location=data.location,
+            installation_date=datetime.utcnow(),
+        )
+
+        return await self._repository.save(beehive)
+```
+
+**Infrastructure Layer (`infrastructure/`)**:
+- Database access and repositories
+- External service integrations
+- Configuration management
+- Technical implementations
+
+```python
+# infrastructure/database/repositories/beehive.py
+class SQLAlchemyBeehiveRepository(BeehiveRepository):
+    """SQLAlchemy implementation of beehive repository."""
+
+    def __init__(self, session: AsyncSession):
+        self._session = session
+
+    async def save(self, beehive: BeehiveModel) -> BeehiveModel:
+        """Save beehive to database."""
+        db_beehive = BeehiveEntity.from_domain_model(beehive)
+        self._session.add(db_beehive)
+        await self._session.flush()
+        return db_beehive.to_domain_model()
+```
+
+### aiohttp Patterns
+
+#### Application Factory Pattern
+
+```python
+# app/main.py
+async def create_app() -> web.Application:
+    """Create and configure the aiohttp application."""
+    app = web.Application(
+        middlewares=[
+            logging_middleware,
+            error_handling_middleware,
+        ]
+    )
+
+    # Configure dependencies
+    app[DatabaseSessionKey] = create_database_session_factory()
+    app[BeehiveServiceKey] = BeehiveService(
+        repository=SQLAlchemyBeehiveRepository()
+    )
+
+    # Add routes
+    app.router.add_routes(beehive_routes)
+    app.router.add_routes(inspection_routes)
+
+    return app
+```
+
+#### Type-Safe Application Keys
+
+```python
+# app/keys.py
+from aiohttp.web import AppKey
+
+DatabaseSessionKey = AppKey("database_session", AsyncSession)
+BeehiveServiceKey = AppKey("beehive_service", BeehiveService)
+ConfigKey = AppKey("config", AppConfig)
+```
+
+### Database Patterns
+
+#### Async Session Management
+
+```python
+# infrastructure/database/session.py
+@asynccontextmanager
+async def get_database_session() -> AsyncGenerator[AsyncSession, None]:
+    """Provide database session with automatic cleanup."""
+    async with async_session_factory() as session:
+        try:
+            yield session
+            await session.commit()
+        except Exception:
+            await session.rollback()
+            raise
+        finally:
+            await session.close()
+```
+
+## Experimental Areas
 
 ### Current Experiments
 
 1. **Modern Async Patterns**
-   - aiohttp with full async pipeline
-   - SQLAlchemy async with proper session management
-   - Async context managers for resource cleanup
+   - Full async/await throughout the application stack
+   - Proper resource management with async context managers
+   - Type-safe dependency injection with aiohttp AppKeys
 
 2. **AI-Assisted Development**
-   - Cursor AI integration with custom rules
-   - MCP (Model Context Protocol) for database queries
-   - AI-powered code suggestions and documentation
+   - Cursor AI integration with custom development rules
+   - MCP (Model Context Protocol) for direct database querying
+   - AI-powered code suggestions and architectural guidance
 
-3. **Developer Experience Tools**
-   - uv for ultra-fast dependency management
-   - ruff for lightning-fast linting and formatting
-   - Pre-commit hooks for automated quality checks
+3. **Developer Experience Optimization**
+   - Ultra-fast dependency management with uv
+   - Lightning-fast linting and formatting with ruff
+   - Comprehensive pre-commit hooks and quality gates
 
 4. **Clean Architecture in Python**
-   - Strict layer separation
-   - Dependency inversion with interfaces
-   - Domain-driven design patterns
+   - Strict layer separation with dependency inversion
+   - Domain-driven design with rich business models
+   - Hexagonal architecture patterns for external integrations
 
 5. **DevOps Automation**
-   - GitHub Actions with concurrency control
+   - GitHub Actions with intelligent concurrency control
    - Automated dependency updates via Dependabot
    - Comprehensive CI/CD pipeline with quality gates
 
-### Areas for Experimentation
+### Areas for Future Experimentation
 
-We welcome contributions in these areas:
+We welcome contributions exploring:
 
-- **Performance Optimization**: Database query optimization, async patterns
-- **Observability**: Logging, metrics, tracing, monitoring
-- **Security**: Authentication, authorization, data validation
-- **Testing**: Advanced testing patterns, property-based testing
-- **Documentation**: API documentation, architectural documentation
-- **Deployment**: Container optimization, orchestration patterns
+- **Observability**: Structured logging, metrics, distributed tracing
+- **Security**: Authentication patterns, authorization, data validation
+- **Performance**: Query optimization, caching strategies, async patterns
+- **Testing**: Property-based testing, contract testing, performance testing
+- **Documentation**: Auto-generated API docs, architectural decision records
+- **Deployment**: Container optimization, Kubernetes patterns, blue-green deployments
 
-## 🤝 Contributing Guidelines
+## Pull Request Process
 
-### Types of Contributions
+### Before Submitting
 
-1. **Code Improvements**
-   - Bug fixes and performance improvements
-   - New features that align with the experimental goals
-   - Refactoring that demonstrates better patterns
+1. **✅ Run quality checks**:
+   ```bash
+   make format lint test
+   ```
 
-2. **Documentation**
-   - Code documentation and examples
-   - Architectural documentation
-   - Tutorial content and guides
+2. **✅ Verify test coverage**: Ensure new code has appropriate test coverage
 
-3. **Testing & Quality**
-   - Additional test cases and coverage improvements
-   - Quality tooling improvements
-   - CI/CD enhancements
+3. **✅ Update documentation**: Include docstrings and update relevant docs
 
-4. **Experimental Features**
-   - New technology integrations
-   - Alternative architectural approaches
-   - Developer tooling experiments
+4. **✅ Check pre-commit hooks**: Ensure all automated checks pass
 
-### Submission Process
+### PR Guidelines
 
-1. **Fork** the repository
-2. **Create** a feature branch: `git checkout -b feature/your-feature-name`
-3. **Follow** the code standards and run quality checks
-4. **Test** your changes thoroughly
-5. **Commit** with clear, descriptive messages
-6. **Push** to your fork and create a Pull Request
+1. **Fill out the PR template** completely with clear description
+2. **Link related issues** using GitHub keywords (fixes #123)
+3. **Keep PRs focused** on a single feature, bug fix, or refactoring
+4. **Include examples** for UI changes or new features
+5. **Explain complex changes** in the PR description
 
-### Pull Request Guidelines
+### PR Review Checklist
 
-- **Clear Description**: Explain what you're changing and why
-- **Test Coverage**: Include tests for new functionality
-- **Quality Checks**: Ensure all CI checks pass
-- **Documentation**: Update relevant documentation
-- **Incremental Changes**: Keep changes focused and atomic
+- **Architecture**: Follows clean architecture principles
+- **Type Safety**: Comprehensive type hints throughout
+- **Testing**: New functionality is well-tested
+- **Documentation**: Public APIs are documented
+- **Performance**: Efficient async patterns and database usage
+- **Learning Value**: Demonstrates interesting patterns or techniques
 
-## 🔍 Code Review Process
-
-All contributions go through code review to maintain quality and provide learning opportunities:
+## Code Review Guidelines
 
 ### What We Look For
 
-- **Architectural Fit**: Does it align with clean architecture principles?
-- **Code Quality**: Proper type hints, error handling, and documentation
-- **Test Coverage**: Comprehensive tests with good assertions
-- **Performance**: Efficient async patterns and database usage
-- **Learning Value**: Does it demonstrate interesting patterns or techniques?
+- **Architectural Alignment**: Does it fit clean architecture principles?
+- **Code Quality**: Proper type hints, error handling, documentation
+- **Test Coverage**: Comprehensive tests with meaningful assertions
+- **Async Patterns**: Correct use of async/await and resource management
+- **Educational Value**: Does it showcase interesting patterns or techniques?
 
-### Review Criteria
+### Review Process
 
-- ✅ **Type Safety**: All code has proper type hints
-- ✅ **Testing**: New code is well-tested with good coverage
-- ✅ **Documentation**: Public APIs are documented
-- ✅ **Error Handling**: Proper exception handling and logging
-- ✅ **Async Patterns**: Correct use of async/await and context managers
-- ✅ **Architecture**: Follows clean architecture layer separation
+1. **Technical Review**: Code quality, architecture, performance
+2. **Learning Discussion**: What patterns or techniques are demonstrated?
+3. **Experimental Value**: How does this contribute to our technology exploration?
+4. **Documentation**: Are the changes well-documented and explained?
 
-## 🐛 Bug Reports & Feature Requests
+## Dependency Management
 
-### Reporting Bugs
+**Use uv exclusively** for dependency management:
 
-Use GitHub Issues with the bug report template:
+```bash
+# Add production dependency
+uv add "package-name>=1.0.0"
 
-- **Environment**: Python version, OS, dependency versions
-- **Steps to Reproduce**: Clear, minimal reproduction steps
-- **Expected vs Actual**: What should happen vs what does happen
-- **Additional Context**: Logs, screenshots, related issues
+# Add development dependency
+uv add --group dev "package-name>=1.0.0"
 
-### Requesting Features
+# Add testing dependency
+uv add --group testing "package-name>=1.0.0"
 
-For feature requests, explain:
+# Update dependencies
+uv sync --upgrade
 
-- **Use Case**: What problem does this solve?
-- **Implementation Ideas**: How might this work?
-- **Experimental Value**: What can we learn from this?
-- **Alternatives**: What other approaches exist?
+# Never use pip directly - always use uv
+```
 
-## 🤖 AI Integration Features
+**Dependency Guidelines**:
+- Always specify version constraints
+- Use semantic versioning ranges (`>=1.0.0,<2.0.0`)
+- Document why dependencies are needed
+- Prefer well-maintained, actively developed packages
 
-### Cursor AI Setup
+## AI Integration
 
-The project includes Cursor AI integration for enhanced development:
+### Cursor AI Features
 
-1. **Smart Rules**: Pre-configured in `.cursor/rules/`
-2. **MCP Integration**: Database queries through AI interface
-3. **Code Suggestions**: Context-aware completions
+**Pre-configured Rules**: Smart development guidelines in `.cursor/rules/`
 
-### Using MCP (Model Context Protocol)
+**MCP Integration**: Direct database querying through AI interface
 
-The custom PostgreSQL MCP server allows AI to:
-- Query database schema directly
+**Usage Examples**:
+```bash
+# Query database schema through AI
+"Show me the beehive table structure"
+
+# Generate code with AI assistance
+"Create a new beehive inspection endpoint following clean architecture"
+
+# Get architectural guidance
+"How should I implement the harvest tracking feature?"
+```
+
+### MCP Server Configuration
+
+Custom PostgreSQL MCP server enables AI to:
+- Query database schema and relationships
 - Generate accurate SQL queries
-- Understand data relationships
+- Understand data constraints and business rules
+- Provide context-aware suggestions
 
-Configure in `.cursor/mcp.json` and use with compatible AI tools.
+Configure in `.cursor/mcp.json` for optimal AI assistance.
 
-## 📚 Learning Resources
+## Troubleshooting Guide
 
-### Understanding the Codebase
+### Common Issues
+
+**Python Environment Issues**:
+```bash
+# Reset virtual environment
+rm -rf .venv
+uv venv
+uv sync --all-groups
+```
+
+**Docker Issues**:
+```bash
+# Clean rebuild
+docker compose down --volumes
+docker compose up --build
+
+# View logs
+docker compose logs -f cityhive_app
+```
+
+**Database Issues**:
+```bash
+# Reset database
+docker compose down postgres
+docker volume rm cityhive_postgres_data
+docker compose up postgres
+make migrate
+```
+
+**Test Issues**:
+```bash
+# Run specific test with verbose output
+uv run pytest tests/unit/domain/test_beehive.py -v -s
+
+# Debug test with breakpoint
+uv run pytest --pdb tests/unit/domain/test_beehive.py::test_specific_function
+```
+
+### Performance Issues
+
+**Database Query Optimization**:
+- Use `explain analyze` for slow queries
+- Add appropriate indexes for spatial queries
+- Use connection pooling for high concurrency
+
+**Async Performance**:
+- Profile with `aiohttp-devtools`
+- Monitor async task execution
+- Use proper connection pooling
+
+## Additional Resources
+
+### Learning the Codebase
 
 - **Start with**: `cityhive/app/main.py` for application entry point
-- **Architecture**: Study the layer separation in each package
+- **Architecture**: Study clean architecture layer separation
 - **Patterns**: Look for dependency injection and async patterns
 - **Testing**: Examine test structure for testing strategies
 
-### External Resources
+### External Documentation
 
-- [aiohttp Documentation](https://docs.aiohttp.org/)
-- [SQLAlchemy Async](https://docs.sqlalchemy.org/en/20/orm/extensions/asyncio.html)
-- [Clean Architecture](https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html)
-- [Python Type Hints](https://docs.python.org/3/library/typing.html)
+- **[aiohttp Documentation](https://docs.aiohttp.org/)**: Web framework patterns
+- **[SQLAlchemy Async](https://docs.sqlalchemy.org/en/20/orm/extensions/asyncio.html)**: Database ORM
+- **[Clean Architecture](https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html)**: Architectural principles
+- **[Python Type Hints](https://docs.python.org/3/library/typing.html)**: Modern typing practices
+- **[FastAPI](https://fastapi.tiangolo.com/)**: Similar async patterns and practices
+- **[Domain-Driven Design](https://martinfowler.com/bliki/DomainDrivenDesign.html)**: Business modeling approaches
 
-## 🎯 Project Roadmap
+### Community Resources
 
-### Short-term Goals
-- Improve test coverage to 95%+
-- Add comprehensive API documentation
-- Implement observability patterns
-- Enhance AI integration capabilities
-
-### Long-term Vision
-- Demonstrate modern Python web development best practices
-- Provide a reference implementation for clean architecture
-- Showcase effective DevOps automation
-- Create educational content around the patterns used
-
-## 💬 Getting Help
-
-- **GitHub Discussions**: For questions and general discussion
-- **GitHub Issues**: For bugs and feature requests
-- **Code Comments**: Inline documentation explains complex patterns
-- **Tests**: Often the best documentation for understanding behavior
-
-## 🙏 Acknowledgments
-
-This project is built on the shoulders of giants. We're grateful to:
-
-- The Python community for excellent async tooling
-- The aiohttp team for a fantastic web framework
-- The SQLAlchemy team for powerful ORM capabilities
-- All the open-source contributors who make projects like this possible
+- **GitHub Discussions**: Questions and general discussion
+- **GitHub Issues**: Bug reports and feature requests
+- **Code Examples**: In-depth examples in test files
+- **AI Assistant**: Use Cursor AI for contextual help
 
 ---
 
-**Happy Contributing!** 🚀
+**Happy Contributing!**
 
-Remember: This is a learning environment. Don't be afraid to experiment, ask questions, or propose new ideas. Every contribution helps make this a better resource for the community.
+Remember: CityHive is a learning environment where experimentation is encouraged. Don't hesitate to try new approaches, ask questions, or propose innovative ideas. Every contribution helps make this a better resource for the entire Python community.
+
+**Key Principle**: Focus on learning, experimenting, and demonstrating modern Python web development practices. Your contributions should be educational, well-tested, and showcase interesting patterns or techniques.
