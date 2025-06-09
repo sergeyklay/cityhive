@@ -46,10 +46,12 @@ This project serves as an experimental playground for:
 ## Essential Commands
 
 ```bash
-make test           # Run all tests with coverage
-make format         # Format code with ruff
-make lint           # Run linter checks
-make migrate        # Apply database migrations
+make test-unit          # Run unit tests with coverage
+make test-integration   # Running integration tests (needs DB to be up)
+make test               # Run all tests
+make format             # Format code with ruff
+make lint               # Run linter checks
+make migrate            # Apply database migrations
 ```
 
 ## Documentation

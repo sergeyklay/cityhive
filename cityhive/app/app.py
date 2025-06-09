@@ -1,5 +1,3 @@
-import os
-
 import aiohttp_jinja2
 import jinja2
 from aiohttp import web
@@ -50,8 +48,7 @@ async def create_app(config: Config | None = None) -> web.Application:
 
 def main() -> None:
     """Main entry point for the application."""
-    env = os.getenv("LOG_FORCE_JSON", "true").strip().lower()
-    setup_logging(force_json=(env == "true"))
+    setup_logging()
 
     logger = get_logger(__name__)
     logger.info("Starting CityHive application")
