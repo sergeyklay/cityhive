@@ -7,49 +7,139 @@ alwaysApply: false
 
 **For Python code generation:** Essential patterns that must be followed in this codebase.
 
-## File Organization
-
-```
-cityhive/
-├── app/             # aiohttp web layer
-├── domain/          # Business logic (no external deps)
-├── infrastructure/  # Database, config, logging
-└── tests/           # Unit and integration tests
-```
-
-## Core Imports
+## Service Factory Pattern
 
 ```python
-# Always use these for common operations
-from aiohttp import web
-from cityhive.infrastructure.logging import get_logger
-from sqlalchemy.ext.asyncio import AsyncSession
+# ✅ Service initialization in app.py
+async def init_services(app: web.Application) -> None:
+    """Initialize services after database is ready."""
+    session_factory = app[db_key]
+    user_service_factory = UserServiceFactory(session_factory)
+    app[user_service_factory_key] = user_service_factory
+    yield
 
-logger = get_logger(__name__)
+# ✅ Usage in views
+async def create_user(request: web.Request) -> web.Response:
+    service_factory = request.app[user_service_factory_key]
+
+    async with request.app[db_key]() as session:
+        user_service = service_factory.create_service(session)
+        user = await user_service.register_user(input_data)
+        await session.commit()
+
+    return web.json_response({"user": user.dict()})
 ```
 
-## Handler Pattern
+## Repository Pattern
 
 ```python
-# ✅ Standard aiohttp handler
-async def endpoint_handler(request: web.Request) -> web.Response:
-    logger.info("Request started", path=request.path)
+# ✅ Repository for data access
+class UserRepository:
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
 
-    # Business logic here
-    result = await process_request(request)
+    async def save(self, user: User) -> User:
+        self._session.add(user)
+        await self._session.flush()  # Get ID without committing
+        return user
 
-    return web.json_response({"data": result})
+    async def get_by_email(self, email: str) -> User | None:
+        result = await self._session.execute(
+            select(User).where(User.email == email)
+        )
+        return result.scalar_one_or_none()
 ```
 
-## Database Pattern
+## Domain Service Pattern
 
 ```python
-# ✅ Async session with proper cleanup
-async def get_user_by_id(session: AsyncSession, user_id: int) -> User | None:
-    result = await session.execute(
-        select(User).where(User.id == user_id)
-    )
-    return result.scalar_one_or_none()
+# ✅ Business logic in domain services
+class UserService:
+    def __init__(self, repository: UserRepository) -> None:
+        self._repository = repository
+
+    async def register_user(self, input_data: UserRegistrationInput) -> User:
+        if await self._repository.exists_by_email(input_data.email):
+            raise DuplicateUserError(input_data.email)
+
+        user = User(name=input_data.name, email=input_data.email)
+        return await self._repository.save(user)
+```
+
+## Domain Exceptions Pattern
+
+```python
+# ✅ Domain-specific exceptions in domain/user/exceptions.py
+class UserError(Exception):
+    """Base exception for user domain."""
+    pass
+
+class DuplicateUserError(UserError):
+    def __init__(self, email: str):
+        self.email = email
+        super().__init__(f"User with email {email} already exists")
+
+# ✅ Convert to HTTP responses in views
+try:
+    user = await user_service.register_user(input_data)
+except DuplicateUserError:
+    return create_error_response("Email already exists", status=409)
+```
+
+## Type-Safe Dependency Injection
+
+```python
+# ✅ Type-safe app keys in infrastructure/typedefs.py
+user_service_factory_key = web.AppKey("user_service_factory", UserServiceFactory)
+
+# ✅ Service registration
+app[user_service_factory_key] = user_service_factory
+
+# ✅ Usage with type safety
+service_factory = request.app[user_service_factory_key]  # Type: UserServiceFactory
+```
+
+## Unit Testing Pattern
+
+```python
+# ✅ Pure functional tests (no classes)
+async def test_save_user_with_valid_data_returns_user_with_id():
+    mock_session = AsyncMock(spec=AsyncSession)
+    repository = UserRepository(mock_session)
+    user = User(name="Test", email="test@example.com")
+
+    mock_session.add.return_value = None
+    mock_session.flush.return_value = None
+
+    result = await repository.save(user)
+
+    assert result is user
+    mock_session.add.assert_called_once_with(user)
+    mock_session.flush.assert_called_once()
+
+# ❌ Don't use class-based tests
+class TestUserService:  # Wrong!
+    def test_something(self):  # Wrong!
+        pass
+```
+
+## Transaction Management Pattern
+
+```python
+# ✅ Explicit transaction control in views
+async def create_user(request: web.Request) -> web.Response:
+    async with request.app[db_key]() as session:
+        try:
+            user_repository = UserRepository(session)
+            user_service = UserService(user_repository)
+
+            user = await user_service.register_user(input_data)
+            await session.commit()  # Explicit commit
+
+            return create_success_response({"user": user.dict()}, status=201)
+        except DuplicateUserError:
+            await session.rollback()  # Explicit rollback
+            return create_error_response("Email already exists", status=409)
 ```
 
 ## Logging Pattern
@@ -67,24 +157,24 @@ logger.info(
 logger.info(f"User {user_id} created")  # Wrong!
 ```
 
-## Test Pattern
+## Core Imports
 
 ```python
-# ✅ Simple functional test
-def test_user_creation_with_valid_data():
-    # Arrange
-    user_data = {"name": "Test", "email": "test@example.com"}
+# Always use these for common operations
+from aiohttp import web
+from cityhive.infrastructure.logging import get_logger
+from sqlalchemy.ext.asyncio import AsyncSession
 
-    # Act
-    result = create_user(user_data)
+# Domain imports
+from cityhive.domain.user import UserService, UserRepository, DuplicateUserError
+from cityhive.infrastructure.typedefs import db_key, user_service_factory_key
 
-    # Assert
-    assert result.success
-    assert result.user.name == "Test"
+logger = get_logger(__name__)
 ```
 
 ---
 
 **See also:**
 - [python-standards.mdc](mdc:.cursor/rules/python-standards.mdc) for detailed standards
+- [testing-guidelines.mdc](mdc:.cursor/rules/testing-guidelines.mdc) for test patterns
 - [Architecture Guide](mdc:docs/architecture.md) for design principles

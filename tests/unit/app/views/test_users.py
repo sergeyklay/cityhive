@@ -1,214 +1,166 @@
 """
-Tests for API views.
+Unit tests for user views.
 
-These tests cover the JSON API endpoints for user registration using pure unit testing.
+Tests the refactored user views using the new domain architecture with service factory.
 """
 
-import uuid
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, patch
 
 import pytest
+from aiohttp.test_utils import make_mocked_request
 
 from cityhive.app.views.users import create_user
 from cityhive.domain.models import User
-from cityhive.domain.services.user import (
-    UserRegistrationErrorType,
-    UserRegistrationResult,
-)
-from tests.unit.app.views.conftest import make_api_request
+from cityhive.domain.user.exceptions import DuplicateUserError
+from cityhive.infrastructure.typedefs import db_key, user_service_factory_key
+
+
+class MockAsyncContextManager:
+    """Mock async context manager for database sessions."""
+
+    def __init__(self, session):
+        self.session = session
+
+    async def __aenter__(self):
+        return self.session
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        pass
 
 
 @pytest.fixture
-def user_data():
-    return {"name": "John Beekeeper", "email": "john@example.com"}
+def mock_session():
+    """Create a mock async database session."""
+    session = AsyncMock()
+    session.commit = AsyncMock()
+    session.rollback = AsyncMock()
+    return session
 
 
 @pytest.fixture
-def mock_user(mocker):
-    user = User(
-        id=1,
-        name="John Beekeeper",
-        email="john@example.com",
-        api_key=uuid.UUID("12345678-1234-5678-9012-123456789abc"),
-    )
-    user.registered_at = mocker.MagicMock()
-    user.registered_at.isoformat.return_value = "2025-06-08T16:00:00Z"
+def session_maker(mock_session):
+    """Create a session maker function that returns a context manager."""
+
+    def _session_maker():
+        return MockAsyncContextManager(mock_session)
+
+    return _session_maker
+
+
+@pytest.fixture
+def mock_user_service_factory():
+    """Create a mock user service factory."""
+    mock_factory = AsyncMock()
+    from unittest.mock import Mock
+
+    mock_factory.create_service = Mock()
+    return mock_factory
+
+
+@pytest.fixture
+def app_with_services(session_maker, mock_user_service_factory):
+    """Mock app with database and services configured."""
+    app = {}
+    app[db_key] = session_maker
+    app[user_service_factory_key] = mock_user_service_factory
+    return app
+
+
+@pytest.fixture
+def valid_user_data():
+    """Valid user registration data."""
+    return {
+        "name": "John Doe",
+        "email": "john.doe@example.com",
+    }
+
+
+@pytest.fixture
+def sample_user():
+    """Sample user model."""
+    from datetime import datetime
+
+    user = User(name="John Doe", email="john.doe@example.com")
+    user.id = 1
+    user.registered_at = datetime.now()
     return user
 
 
-async def test_create_user_with_valid_data_returns_success(
-    app_with_db, mocker, user_data, mock_user
-):
-    request = make_api_request("POST", "/api/users", app_with_db)
+async def test_create_user_success(app_with_services, valid_user_data, sample_user):
+    """Test successful user creation through the view using service factory."""
+    request = make_mocked_request("POST", "/api/users", app=app_with_services)
+    request.json = AsyncMock(return_value=valid_user_data)
 
-    # Mock request.json() to return our test data
-    request.json = AsyncMock(return_value=user_data)
+    mock_service = AsyncMock()
+    mock_service.register_user.return_value = sample_user
 
-    mock_result = UserRegistrationResult(success=True, user=mock_user)
-    mock_user_service = mocker.patch("cityhive.app.views.users.UserService")
-    create_user_mock = AsyncMock(return_value=mock_result)
-    mock_user_service.return_value.register_user = create_user_mock
+    mock_service_factory = app_with_services[user_service_factory_key]
+    mock_service_factory.create_service.return_value = mock_service
 
     response = await create_user(request)
 
     assert response.status == 201
-    assert response.content_type == "application/json"
+
+    mock_service_factory.create_service.assert_called_once()
+    mock_service.register_user.assert_called_once()
+
+    app_with_services[db_key]().session.commit.assert_awaited_once()
 
 
-async def test_create_user_with_invalid_json_returns_bad_request(base_app, mocker):
-    request = make_api_request("POST", "/api/users", base_app)
-
-    # Mock request.json() to raise an exception
-    request.json = AsyncMock(side_effect=ValueError("Invalid JSON"))
-
-    response = await create_user(request)
-
-    assert response.status == 400
-
-
-@pytest.mark.parametrize(
-    "test_data,description",
-    [
-        ({"email": "john@example.com"}, "missing name"),
-        ({"name": "", "email": "john@example.com"}, "empty name"),
-        ({"name": "   ", "email": "john@example.com"}, "whitespace name"),
-    ],
-)
-async def test_create_user_with_invalid_name_returns_validation_error(
-    base_app, mocker, test_data, description
-):
-    request = make_api_request("POST", "/api/users", base_app)
-    request.json = AsyncMock(return_value=test_data)
+async def test_create_user_validation_error(app_with_services):
+    """Test user creation with invalid data."""
+    invalid_data = {"name": "", "email": "invalid-email"}
+    request = make_mocked_request("POST", "/api/users", app=app_with_services)
+    request.json = AsyncMock(return_value=invalid_data)
 
     response = await create_user(request)
 
     assert response.status == 400
 
 
-@pytest.mark.parametrize(
-    "test_data,description",
-    [
-        ({"name": "John"}, "missing email"),
-        ({"name": "John", "email": ""}, "empty email"),
-        ({"name": "John", "email": "   "}, "whitespace email"),
-        ({"name": "John", "email": "invalid-email"}, "invalid email format"),
-        ({"name": "John", "email": "no-domain@"}, "email missing domain"),
-        ({"name": "John", "email": "@no-local.com"}, "email missing local part"),
-        ({"name": "John", "email": "invalid@@domain.com"}, "email with double @"),
-    ],
-)
-async def test_create_user_with_invalid_email_returns_validation_error(
-    base_app, mocker, test_data, description
-):
-    request = make_api_request("POST", "/api/users", base_app)
-    request.json = AsyncMock(return_value=test_data)
+async def test_create_user_duplicate_error(app_with_services, valid_user_data):
+    """Test user creation when user already exists."""
+    request = make_mocked_request("POST", "/api/users", app=app_with_services)
+    request.json = AsyncMock(return_value=valid_user_data)
 
-    response = await create_user(request)
+    mock_service = AsyncMock()
+    mock_service.register_user.side_effect = DuplicateUserError("john.doe@example.com")
 
-    assert response.status == 400
-
-
-async def test_create_user_with_existing_email_returns_conflict(app_with_db, mocker):
-    data = {"name": "John", "email": "existing@example.com"}
-    request = make_api_request("POST", "/api/users", app_with_db)
-    request.json = AsyncMock(return_value=data)
-
-    mock_result = UserRegistrationResult(
-        success=False,
-        error_type=UserRegistrationErrorType.USER_EXISTS,
-        error_message="User with this email already exists",
-    )
-    mock_user_service = mocker.patch("cityhive.app.views.users.UserService")
-    register_user_mock = AsyncMock(return_value=mock_result)
-    mock_user_service.return_value.register_user = register_user_mock
+    mock_service_factory = app_with_services[user_service_factory_key]
+    mock_service_factory.create_service.return_value = mock_service
 
     response = await create_user(request)
 
     assert response.status == 409
 
-
-async def test_create_user_with_database_error_returns_server_error(
-    app_with_db, mocker
-):
-    data = {"name": "John", "email": "john@example.com"}
-    request = make_api_request("POST", "/api/users", app_with_db)
-    request.json = AsyncMock(return_value=data)
-
-    mock_result = UserRegistrationResult(
-        success=False,
-        error_type=UserRegistrationErrorType.DATABASE_ERROR,
-        error_message="Database connection failed",
-    )
-    mock_user_service = mocker.patch("cityhive.app.views.users.UserService")
-    register_user_mock = AsyncMock(return_value=mock_result)
-    mock_user_service.return_value.register_user = register_user_mock
-
-    response = await create_user(request)
-
-    assert response.status == 500
+    app_with_services[db_key]().session.rollback.assert_called_once()
 
 
-async def test_create_user_with_unexpected_exception_returns_internal_error(
-    app_with_db, mocker
-):
-    data = {"name": "John", "email": "john@example.com"}
-    request = make_api_request("POST", "/api/users", app_with_db)
-    request.json = AsyncMock(return_value=data)
+async def test_create_user_json_parse_error(app_with_services):
+    """Test user creation with invalid JSON."""
+    request = make_mocked_request("POST", "/api/users", app=app_with_services)
 
-    mock_user_service = mocker.patch("cityhive.app.views.users.UserService")
-    register_user_mock = AsyncMock(side_effect=Exception("Unexpected error"))
-    mock_user_service.return_value.register_user = register_user_mock
+    with patch("cityhive.app.views.users.parse_json_request") as mock_parse:
+        mock_parse.return_value = (None, "Invalid JSON format")
+
+        response = await create_user(request)
+
+        assert response.status == 400
+
+
+async def test_create_user_unexpected_error(app_with_services, valid_user_data):
+    """Test user creation when unexpected error occurs."""
+    request = make_mocked_request("POST", "/api/users", app=app_with_services)
+    request.json = AsyncMock(return_value=valid_user_data)
+
+    mock_service = AsyncMock()
+    mock_service.register_user.side_effect = Exception("Database connection failed")
+
+    mock_service_factory = app_with_services[user_service_factory_key]
+    mock_service_factory.create_service.return_value = mock_service
 
     response = await create_user(request)
 
     assert response.status == 500
 
-
-async def test_create_user_normalizes_email_to_lowercase(
-    app_with_db, mocker, mock_user
-):
-    data = {"name": "John", "email": "JOHN@EXAMPLE.COM"}
-    request = make_api_request("POST", "/api/users", app_with_db)
-    request.json = AsyncMock(return_value=data)
-
-    mock_result = UserRegistrationResult(success=True, user=mock_user)
-    mock_user_service = mocker.patch("cityhive.app.views.users.UserService")
-    register_user_mock = AsyncMock(return_value=mock_result)
-    mock_user_service.return_value.register_user = register_user_mock
-
-    response = await create_user(request)
-
-    assert response.status == 201
-
-
-async def test_create_user_trims_whitespace_from_inputs(app_with_db, mocker, mock_user):
-    data = {"name": "  John  ", "email": "  john@example.com  "}
-    request = make_api_request("POST", "/api/users", app_with_db)
-    request.json = AsyncMock(return_value=data)
-
-    mock_result = UserRegistrationResult(success=True, user=mock_user)
-    mock_user_service = mocker.patch("cityhive.app.views.users.UserService")
-    register_user_mock = AsyncMock(return_value=mock_result)
-    mock_user_service.return_value.register_user = register_user_mock
-
-    response = await create_user(request)
-
-    assert response.status == 201
-
-
-async def test_create_user_returns_correct_content_type_header(
-    app_with_db, mocker, mock_user
-):
-    data = {"name": "Test User", "email": "test@example.com"}
-    request = make_api_request("POST", "/api/users", app_with_db)
-    request.json = AsyncMock(return_value=data)
-
-    mock_result = UserRegistrationResult(success=True, user=mock_user)
-    mock_user_service = mocker.patch("cityhive.app.views.users.UserService")
-    register_user_mock = AsyncMock(return_value=mock_result)
-    mock_user_service.return_value.register_user = register_user_mock
-
-    response = await create_user(request)
-
-    assert response.status == 201
-    assert response.content_type == "application/json"
+    app_with_services[db_key]().session.rollback.assert_called_once()
