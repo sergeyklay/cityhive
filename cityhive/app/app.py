@@ -48,7 +48,7 @@ async def create_app(config: Config | None = None) -> web.Application:
 
 def main() -> None:
     """Main entry point for the application."""
-    setup_logging()
+    setup_logging(force_json=True)
 
     logger = get_logger(__name__)
     logger.info("Starting CityHive application")

@@ -15,7 +15,7 @@ import asyncpg
 
 from cityhive.infrastructure.logging import get_logger, setup_logging
 
-setup_logging()
+setup_logging(force_json=True)
 
 logger = get_logger(__name__)
 
