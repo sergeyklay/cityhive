@@ -84,7 +84,7 @@ jobs:
           # Wait for PostgreSQL to be ready
           echo "Waiting for PostgreSQL to be ready..."
           timeout=60
-          while ! docker compose exec -T cityhive_db pg_isready -U $POSTGRES_USER -d $POSTGRES_DB; do
+          while ! docker compose exec -T cityhive_db pg_isready -U cityhive -d cityhive; do
             sleep 2
             timeout=$((timeout - 2))
             if [ $timeout -le 0 ]; then
@@ -94,19 +94,13 @@ jobs:
             fi
           done
           echo "PostgreSQL is ready"
-        env:
-          POSTGRES_DB: cityhive_test
-          POSTGRES_USER: cityhive
+          sleep 2
 
       - name: Run database migrations
         run: make migrate
-        env:
-          APP_ENV: testing
 
       - name: Run integration tests
         run: make test-integration
-        env:
-          APP_ENV: testing
 
       - name: Stop PostgreSQL services
         if: always()

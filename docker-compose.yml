@@ -36,7 +36,6 @@ services:
         aliases:
           - cityhive-app
     environment:
-      APP_ENV: ${APP_ENV:-development}
       DATABASE_URI: ${DATABASE_URI:-postgresql+asyncpg://cityhive:cityhive@cityhive-db:5432/cityhive}
     depends_on:
       cityhive_db:
