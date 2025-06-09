@@ -21,14 +21,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 FROM base AS builder
 
 # Copy uv from the official distroless image
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+COPY --from=ghcr.io/astral-sh/uv:0.7.12 /uv /uvx /bin/
 
 ENV UV_LINK_MODE=copy \
+    UV_COMPILE_BYTECODE=1 \
     VIRTUAL_ENV=/opt/venv
 
 COPY pyproject.toml uv.lock ./
 
-RUN uv venv /opt/venv \
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv venv /opt/venv \
     && uv sync \
     --locked \
     --no-install-project \
@@ -47,10 +49,12 @@ LABEL org.opencontainers.image.source="https://github.com/sergeyklay/cityhive" \
     org.opencontainers.image.licenses=MIT
 
 # Install runtime dependencies only
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
     libpq5 \
     postgresql-client \
     curl \
+    && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy virtual environment from builder
