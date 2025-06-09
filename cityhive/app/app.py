@@ -50,8 +50,8 @@ async def create_app(config: Config | None = None) -> web.Application:
 
 def main() -> None:
     """Main entry point for the application."""
-    env = os.getenv("APP_ENV", "default").strip().lower()
-    setup_logging(force_json=(env == "production"))
+    env = os.getenv("LOG_FORCE_JSON", "true").strip().lower()
+    setup_logging(force_json=(env == "true"))
 
     logger = get_logger(__name__)
     logger.info("Starting CityHive application")

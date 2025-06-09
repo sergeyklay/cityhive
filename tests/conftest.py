@@ -5,42 +5,8 @@ import pytest
 from aiohttp import web
 from pydantic_settings import SettingsConfigDict
 
-from cityhive.infrastructure.config import (
-    Config,
-    DevelopmentConfig,
-    ProductionConfig,
-    TestingConfig,
-)
+from cityhive.infrastructure.config import Config
 from cityhive.infrastructure.typedefs import db_key
-
-
-@pytest.fixture(autouse=True)
-def isolate_env_and_dotenv():
-    """Ensure complete test isolation from .env files and system environment."""
-    # Preserve APP_ENV if set (needed for CI integration tests)
-    app_env = os.environ.get("APP_ENV")
-    env_patch = {} if app_env is None else {"APP_ENV": app_env}
-
-    with (
-        patch.dict(os.environ, env_patch, clear=True),
-        patch.multiple(
-            Config,
-            model_config=SettingsConfigDict(env_file=None, env_ignore_empty=True),
-        ),
-        patch.multiple(
-            DevelopmentConfig,
-            model_config=SettingsConfigDict(env_file=None, env_ignore_empty=True),
-        ),
-        patch.multiple(
-            ProductionConfig,
-            model_config=SettingsConfigDict(env_file=None, env_ignore_empty=True),
-        ),
-        patch.multiple(
-            TestingConfig,
-            model_config=SettingsConfigDict(env_file=None, env_ignore_empty=True),
-        ),
-    ):
-        yield
 
 
 class MockAsyncContextManager:
@@ -70,9 +36,6 @@ def session_maker(mock_session):
         return MockAsyncContextManager(mock_session)
 
     return _session_maker
-
-
-# New hierarchical aiohttp fixtures following best practices
 
 
 @pytest.fixture
@@ -107,6 +70,33 @@ async def full_app_client(aiohttp_client):
 
     app = await create_app()
     return await aiohttp_client(app)
+
+
+@pytest.fixture(autouse=True)
+def isolate_env():
+    """Ensure complete test isolation from .env files and system environment."""
+    # Preserve DATABASE_URI for tests that need it (integration tests)
+    test_env = {}
+    if "DATABASE_URI" in os.environ:
+        # For local testing, convert Docker internal hostname to localhost
+        database_uri = os.environ["DATABASE_URI"]
+        if "cityhive-db" in database_uri:
+            database_uri = database_uri.replace("cityhive-db", "localhost")
+        test_env["DATABASE_URI"] = database_uri
+    else:
+        # Provide a test default for unit tests
+        test_env["DATABASE_URI"] = (
+            "postgresql+asyncpg://cityhive:cityhive@localhost:5432/cityhive"
+        )
+
+    with (
+        patch.dict(os.environ, test_env, clear=True),
+        patch.multiple(
+            Config,
+            model_config=SettingsConfigDict(env_file=None, env_ignore_empty=True),
+        ),
+    ):
+        yield
 
 
 @pytest.fixture(autouse=True)
