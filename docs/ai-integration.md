@@ -6,9 +6,13 @@ I'm a firm believer that anything a human doesn't have to do by hand should be a
 
 All code is composed in Cursor AI, guided by a living collection of experimental rules (found in `.cursor/rules/`). These rule files — covering everything from dependency management to project patterns — continuously evolve alongside the code, ensuring Cursor's completions stay aligned with our clean-architecture layers, type-hinting conventions and testing best practices.
 
-## MCP (Model Context Protocol) Server
+## MCP (Model Context Protocol) Servers
 
-To enrich the AI's perspective, we run two [MCP](https://modelcontextprotocol.io/introduction) servers. First, [Context7 MCP Server](https://context7.com) streams curated indexes of CityHive's schemas, contracts and usage examples directly into the AI's context window. Second, our own lightweight MCP implementation (in `.cursor/postgres.py` with its `.cursor/mcp.json` manifest) provides read-only PostgreSQL access: schema inspection, query execution and data-relationship awareness — all with minimal dependencies and transparent logic. This dual setup guarantees that generated code reflects both our domain model and real database constraints without ever compromising safety.
+To enrich the AI's perspective, we run two [MCP](https://modelcontextprotocol.io/introduction) servers.
+- First, [Context7 MCP Server](https://context7.com) streams curated indexes of CityHive's schemas, contracts and usage examples directly into the AI's context window.
+- Second, our own lightweight MCP implementation (in `.cursor/postgres.py` with its `.cursor/mcp.json` manifest) provides read-only PostgreSQL access: schema inspection, query execution and data-relationship awareness — all with minimal dependencies and transparent logic.
+
+This dual setup guarantees that generated code reflects both our domain model and real database constraints without ever compromising safety.
 
 ## Code Review
 
