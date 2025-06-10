@@ -13,7 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from cityhive.infrastructure.logging import get_logger
 
-from .exceptions import DatabaseHealthCheckError, TimeoutError
+from .exceptions import DatabaseHealthCheckError, HealthCheckTimeoutError
 from .models import ComponentHealth, HealthStatus
 
 logger = get_logger(__name__)
@@ -37,7 +37,7 @@ class HealthRepository:
             ComponentHealth object with database status
 
         Raises:
-            TimeoutError: If database check times out
+            HealthCheckTimeoutError: If database check times out
             DatabaseHealthCheckError: If database check fails
         """
         start_time = datetime.now(timezone.utc)
@@ -77,7 +77,9 @@ class HealthRepository:
                 response_time_ms=response_time,
             )
 
-            raise TimeoutError("database", self.db_timeout_seconds) from timeout_err
+            raise HealthCheckTimeoutError(
+                "database", self.db_timeout_seconds
+            ) from timeout_err
 
         except Exception as e:
             response_time = (

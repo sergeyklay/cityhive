@@ -20,7 +20,7 @@ class DatabaseHealthCheckError(HealthCheckError):
         super().__init__(message)
 
 
-class TimeoutError(HealthCheckError):
+class HealthCheckTimeoutError(HealthCheckError):
     """Raised when health check operations timeout."""
 
     def __init__(self, component: str, timeout_seconds: float) -> None:

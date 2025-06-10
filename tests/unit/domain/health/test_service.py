@@ -10,7 +10,10 @@ from unittest.mock import AsyncMock, Mock
 
 import pytest
 
-from cityhive.domain.health.exceptions import DatabaseHealthCheckError, TimeoutError
+from cityhive.domain.health.exceptions import (
+    DatabaseHealthCheckError,
+    HealthCheckTimeoutError,
+)
 from cityhive.domain.health.models import ComponentHealth, HealthStatus, SystemHealth
 from cityhive.domain.health.repository import HealthRepository
 from cityhive.domain.health.service import HealthService, HealthServiceFactory
@@ -109,7 +112,7 @@ async def test_check_readiness_database_timeout_exception(
 ) -> None:
     """Test readiness check with database timeout exception."""
     mock_db_session_factory = Mock()
-    timeout_error = TimeoutError("database", 5.0)
+    timeout_error = HealthCheckTimeoutError("database", 5.0)
 
     mock_health_repository.check_database = AsyncMock(side_effect=timeout_error)
 

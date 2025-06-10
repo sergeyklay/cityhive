@@ -10,7 +10,10 @@ from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
 
-from cityhive.domain.health.exceptions import DatabaseHealthCheckError, TimeoutError
+from cityhive.domain.health.exceptions import (
+    DatabaseHealthCheckError,
+    HealthCheckTimeoutError,
+)
 from cityhive.domain.health.models import ComponentHealth, HealthStatus
 from cityhive.domain.health.repository import HealthRepository
 
@@ -68,7 +71,7 @@ async def test_check_database_timeout(
     mock_factory = Mock()
     mock_factory.return_value = SlowAsyncContextManager()
 
-    with pytest.raises(TimeoutError) as exc_info:
+    with pytest.raises(HealthCheckTimeoutError) as exc_info:
         await health_repository.check_database(mock_factory)
 
     assert exc_info.value.component == "database"
