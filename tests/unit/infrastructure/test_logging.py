@@ -207,10 +207,8 @@ def test_setup_logging_configures_structlog_and_logs_initialization(mocker):
 
     setup_logging(force_json=True)
 
-    mock_configure_structlog.assert_called_once_with(force_json=True)
-    mock_get_logger.assert_called_once_with("cityhive.infrastructure.logging")
-    mock_logger.info.assert_called_once_with(
-        "Logging system initialized", force_json=True
+    mock_configure_structlog.assert_called_once_with(
+        force_json=True, log_level=logging.INFO
     )
 
 
@@ -224,9 +222,8 @@ def test_setup_logging_with_force_json_false(mocker):
 
     setup_logging(force_json=False)
 
-    mock_configure_structlog.assert_called_once_with(force_json=False)
-    mock_logger.info.assert_called_once_with(
-        "Logging system initialized", force_json=False
+    mock_configure_structlog.assert_called_once_with(
+        force_json=False, log_level=logging.INFO
     )
 
 

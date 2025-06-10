@@ -3,6 +3,7 @@
 This module provides environment-aware configuration using pydantic-settings.
 """
 
+import logging
 from functools import lru_cache
 from pathlib import Path
 
@@ -24,7 +25,6 @@ class Config(BaseSettings):
         validate_default=True,
     )
 
-    testing: bool = False
     debug: bool = False
 
     database_uri: PostgresDsn = Field(
@@ -85,6 +85,13 @@ class Config(BaseSettings):
     log_force_json: bool = Field(
         default=True,
         description="Force JSON logging",
+    )
+
+    log_level: int = Field(
+        default=logging.INFO,
+        ge=logging.NOTSET,
+        le=logging.CRITICAL,
+        description="Log level",
     )
 
     @field_validator("database_uri", mode="before")
