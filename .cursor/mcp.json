@@ -1,6 +1,7 @@
 {
   "mcpServers": {
     "context7": {
+      "type": "http",
       "url": "https://mcp.context7.com/mcp"
     },
     "cityhive_db": {
