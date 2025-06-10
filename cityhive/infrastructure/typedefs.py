@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from cityhive.domain.health.service import HealthServiceFactory
 from cityhive.domain.hive.service import HiveServiceFactory
+from cityhive.domain.inspection.service import InspectionServiceFactory
 from cityhive.domain.user.service import UserServiceFactory
 from cityhive.infrastructure.config import Config
 
@@ -27,6 +28,11 @@ user_service_factory_key = web.AppKey("user_service_factory", UserServiceFactory
 
 hive_service_factory_key = web.AppKey("hive_service_factory", HiveServiceFactory)
 """Hive service factory key for storing HiveServiceFactory instance."""
+
+inspection_service_factory_key = web.AppKey(
+    "inspection_service_factory", InspectionServiceFactory
+)
+"""Inspection service factory key for storing InspectionServiceFactory instance."""
 
 health_service_factory_key = web.AppKey("health_service_factory", HealthServiceFactory)
 """Health service factory key for storing HealthServiceFactory instance."""

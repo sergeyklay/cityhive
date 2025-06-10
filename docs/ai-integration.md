@@ -1,6 +1,6 @@
 # AI Integration
 
-I'm a firm believer that anything a human doesn't have to do by hand should be automated — and that absolutely includes how we write, review and deploy code. In CityHive, AI isn't an add-on, it's woven into the very fabric of the development process:
+I'm a firm believer that anything a human doesn't have to do by hand should be automated — and that absolutely includes how I write, review and deploy code. In CityHive, AI isn't an add-on, it's woven into the very fabric of the development process:
 
 ## Cursor AI Integration
 
@@ -8,7 +8,7 @@ All code is composed in Cursor AI, guided by a living collection of experimental
 
 ## MCP (Model Context Protocol) Servers
 
-To enrich the AI's perspective, we run two [MCP](https://modelcontextprotocol.io/introduction) servers.
+To enrich the AI's perspective, I run two [MCP](https://modelcontextprotocol.io/introduction) servers.
 - First, [Context7 MCP Server](https://context7.com) streams curated indexes of CityHive's schemas, contracts and usage examples directly into the AI's context window.
 - Second, our own lightweight MCP implementation (in `.cursor/postgres.py` with its `.cursor/mcp.json` manifest) provides read-only PostgreSQL access: schema inspection, query execution and data-relationship awareness — all with minimal dependencies and transparent logic.
 
