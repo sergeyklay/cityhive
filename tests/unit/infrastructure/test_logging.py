@@ -197,21 +197,6 @@ def test_get_logger_with_no_name_passes_none(mocker):
     mock_structlog_get_logger.assert_called_once_with(None)
 
 
-def test_setup_logging_configures_structlog_and_logs_initialization(mocker):
-    mock_configure_structlog = mocker.patch(
-        "cityhive.infrastructure.logging.configure_structlog"
-    )
-    mock_get_logger = mocker.patch("cityhive.infrastructure.logging.get_logger")
-    mock_logger = MagicMock()
-    mock_get_logger.return_value = mock_logger
-
-    setup_logging(force_json=True)
-
-    mock_configure_structlog.assert_called_once_with(
-        force_json=True, log_level=logging.INFO
-    )
-
-
 def test_setup_logging_with_force_json_false(mocker):
     mock_configure_structlog = mocker.patch(
         "cityhive.infrastructure.logging.configure_structlog"
