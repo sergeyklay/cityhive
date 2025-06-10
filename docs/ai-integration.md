@@ -1,6 +1,6 @@
 # AI Integration
 
-I'm a firm believer that anything a human doesn't have to do by hand should be automated — and that absolutely includes how I write, review and deploy code. In CityHive, AI isn't an add-on, it's woven into the very fabric of the development process:
+I'm a firm believer that anything a human doesn't have to do by hand should be automated — and that absolutely includes how I write, review and deploy code. In CityHive, AI isn't an add-on, it's woven into the very fabric of my development process:
 
 ## Cursor AI Integration
 
