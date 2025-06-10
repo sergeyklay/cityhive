@@ -68,7 +68,7 @@ make migrate            # Apply database migrations
 ## Key Technologies
 
 - **Python 3.12** with **aiohttp** web framework
-- **PostgreSQL + PostGIS** with **SQLAlchemy** async ORM
+- **PostgreSQL + PostGIS** with **SQLAlchemy** async ORM and **asyncpg** driver
 - **Docker** containerization and **uv** package management
 - **Pytest** testing with **ruff** linting and formatting
 
