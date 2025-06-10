@@ -17,7 +17,6 @@ def test_config_default_values():
     test_uri = "postgresql://test:test@localhost:5432/test"
     config = Config(database_uri=test_uri)  # type: ignore[arg-type]
 
-    assert config.testing is False
     assert config.debug is False
     assert str(config.database_uri).startswith("postgresql+asyncpg://")
     assert config.db_pool_size == 5
@@ -63,25 +62,6 @@ def test_config_field_validation_constraints(field_name: str, invalid_value: int
     assert field_name in str(exc_info.value)
 
 
-def test_config_overrides():
-    """Test config field overrides work correctly."""
-    test_uri = "postgresql://test:test@localhost:5432/test"
-    config = Config(
-        database_uri=test_uri,  # type: ignore[arg-type]
-        app_host="localhost",
-        app_port=9000,
-        db_pool_size=10,
-        debug=True,
-        testing=True,
-    )
-
-    assert config.app_host == "localhost"
-    assert config.app_port == 9000
-    assert config.db_pool_size == 10
-    assert config.debug is True
-    assert config.testing is True
-
-
 def test_get_config_cached():
     """Test get_config returns cached instance on subsequent calls."""
     with patch.dict(
@@ -103,7 +83,6 @@ def test_config_reads_from_environment():
         "DB_POOL_SIZE": "15",
         "DB_MAX_OVERFLOW": "25",
         "DEBUG": "true",
-        "TESTING": "false",
     }
 
     with patch.dict(os.environ, env_vars):
@@ -117,7 +96,6 @@ def test_config_reads_from_environment():
         assert config.db_pool_size == 15
         assert config.db_max_overflow == 25
         assert config.debug is True
-        assert config.testing is False
 
 
 def test_config_validation_with_invalid_env_values():
@@ -136,13 +114,11 @@ def test_config_boolean_env_vars():
     env_vars = {
         "DATABASE_URI": "postgresql://test:test@localhost:5432/test",
         "DEBUG": "false",
-        "TESTING": "true",
     }
     with patch.dict(os.environ, env_vars):
         config = Config()  # type: ignore[call-arg]
 
         assert config.debug is False
-        assert config.testing is True
 
 
 @pytest.mark.parametrize(

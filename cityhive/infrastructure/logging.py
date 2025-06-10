@@ -15,17 +15,20 @@ import structlog
 from structlog.typing import FilteringBoundLogger, Processor
 
 
-def configure_stdlib_logging() -> None:
+def configure_stdlib_logging(log_level: int = logging.INFO) -> None:
     """
     Configure Python's standard library logging to work with structlog.
 
     Sets up basic logging configuration to direct all log messages to stdout
     in a 12-factor app compatible way.
+
+    Args:
+        log_level: The log level to use.
     """
     logging.basicConfig(
         format="%(message)s",
         stream=sys.stdout,
-        level=logging.INFO,
+        level=log_level,
     )
 
 
@@ -96,15 +99,20 @@ def get_processors_for_development() -> list[Processor]:
     ]
 
 
-def configure_structlog(*, force_json: bool = True) -> None:
+def configure_structlog(
+    *,
+    log_level: int = logging.INFO,
+    force_json: bool = True,
+) -> None:
     """
     Configure structlog for the application.
 
     Args:
+        log_level: The log level to use.
         force_json: If True, always use JSON output. If False, auto-detect based on TTY.
     """
     # Configure standard library logging first
-    configure_stdlib_logging()
+    configure_stdlib_logging(log_level=log_level)
 
     # Choose processors based on environment
     if force_json or not sys.stderr.isatty():
@@ -117,7 +125,7 @@ def configure_structlog(*, force_json: bool = True) -> None:
     # Configure structlog
     structlog.configure(
         processors=processors,
-        wrapper_class=structlog.make_filtering_bound_logger(logging.INFO),
+        wrapper_class=structlog.make_filtering_bound_logger(log_level),
         context_class=dict,
         logger_factory=structlog.stdlib.LoggerFactory(),
         cache_logger_on_first_use=True,
@@ -137,7 +145,9 @@ def get_logger(name: str | None = None) -> FilteringBoundLogger:
     return structlog.get_logger(name)
 
 
-def setup_logging(*, force_json: bool | None = None) -> None:
+def setup_logging(
+    *, log_level: int | None = None, force_json: bool | None = None
+) -> None:
     """
     Setup application-wide logging configuration.
 
@@ -145,17 +155,19 @@ def setup_logging(*, force_json: bool | None = None) -> None:
     Should be called early in the application startup process.
 
     Args:
+        log_level: The log level to use.
+            If None, use the LOG_LEVEL environment variable.
         force_json: If True, always use JSON output. If False, auto-detect based on TTY.
             If None, use the LOG_FORCE_JSON environment variable.
     """
+
+    if log_level is None:
+        log_level = int(os.getenv("LOG_LEVEL", logging.INFO))
+
     if force_json is None:
         force_json = os.getenv("LOG_FORCE_JSON", "true").strip().lower() == "true"
 
-    configure_structlog(force_json=force_json)
-
-    # Get a logger to test the configuration
-    logger = get_logger(__name__)
-    logger.info("Logging system initialized", force_json=force_json)
+    configure_structlog(log_level=log_level, force_json=force_json)
 
 
 def configure_request_logging() -> None:
