@@ -9,9 +9,9 @@ from typing import Any
 
 from aiohttp import web
 
-from cityhive.domain.services.health import HealthCheckService
+from cityhive.domain.health import HealthService
 from cityhive.infrastructure.logging import get_logger
-from cityhive.infrastructure.typedefs import db_key
+from cityhive.infrastructure.typedefs import db_key, health_service_factory_key
 
 logger = get_logger(__name__)
 
@@ -23,7 +23,8 @@ async def liveness_check(request: web.Request) -> web.Response:
     Fast check to verify the application is running and responsive.
     Used by orchestration systems to know when to restart the container.
     """
-    health_service = HealthCheckService()
+    health_service_factory = request.app[health_service_factory_key]
+    health_service: HealthService = health_service_factory.create()
     health = await health_service.check_liveness()
 
     response_data: dict[str, Any] = {
@@ -50,7 +51,8 @@ async def readiness_check(request: web.Request) -> web.Response:
     Comprehensive check including all dependencies (database, etc.).
     Used by load balancers to know when the service can accept traffic.
     """
-    health_service = HealthCheckService()
+    health_service_factory = request.app[health_service_factory_key]
+    health_service: HealthService = health_service_factory.create()
     health = await health_service.check_readiness(request.app[db_key])
 
     response_data: dict[str, Any] = {
@@ -62,7 +64,7 @@ async def readiness_check(request: web.Request) -> web.Response:
     if health.version:
         response_data["version"] = health.version
 
-    if health.components:
+    if health.components is not None:
         components_data = []
         for component in health.components:
             component_dict = {
