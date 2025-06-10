@@ -131,3 +131,82 @@ async def create_hive(request: web.Request) -> web.Response:
     except Exception:
         logger.exception("Unexpected error in hive creation API")
         return create_error_response("Internal server error", 500)
+
+
+async def list_hives(request: web.Request) -> web.Response:
+    """
+    Get hives for a specific user.
+
+    Expected query parameters:
+    - user_id: ID of the user whose hives to retrieve
+
+    Returns:
+    - 200: List of hives for the user
+    - 400: Missing or invalid user_id parameter
+    - 500: Internal server error
+    """
+    try:
+        # Get user_id from query parameters
+        user_id_param = request.query.get("user_id")
+        if not user_id_param:
+            return create_error_response("user_id parameter is required", 400)
+
+        try:
+            user_id = int(user_id_param)
+            if user_id <= 0:
+                raise ValueError("user_id must be positive")
+        except ValueError:
+            return create_error_response("user_id must be a positive integer", 400)
+
+        async with request.app[db_key]() as session:
+            try:
+                hive_service_factory = request.app[hive_service_factory_key]
+                hive_service = hive_service_factory.create_service(session)
+                hives = await hive_service.get_hives_by_user_id(user_id)
+
+                logger.info(
+                    "Hive list API success",
+                    user_id=user_id,
+                    hive_count=len(hives),
+                )
+
+                # Build response data
+                hives_data = []
+                for hive in hives:
+                    hive_data = {
+                        "id": hive.id,
+                        "user_id": hive.user_id,
+                        "name": hive.name,
+                        "frame_type": hive.frame_type,
+                        "installed_at": hive.installed_at.isoformat()
+                        if hive.installed_at
+                        else None,
+                    }
+
+                    # Add location data if available
+                    if hive.location:
+                        # Note: In a real implementation, you would extract coordinates
+                        # from the PostGIS geometry. For now, we'll set to None since
+                        # the location extraction logic is not implemented yet.
+                        hive_data["location"] = None
+                    else:
+                        hive_data["location"] = None
+
+                    hives_data.append(hive_data)
+
+                return create_success_response(
+                    {"hives": hives_data},
+                    status=200,
+                )
+
+            except Exception as e:
+                logger.exception(
+                    "Unexpected error during hive list retrieval",
+                    user_id=user_id,
+                    error_type=type(e).__name__,
+                )
+                return create_error_response("Internal server error", 500)
+
+    except Exception:
+        logger.exception("Unexpected error in hive list API")
+        return create_error_response("Internal server error", 500)
