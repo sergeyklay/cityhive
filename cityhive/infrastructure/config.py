@@ -90,8 +90,7 @@ class Config(BaseSettings):
     log_level: int = Field(
         default=logging.INFO,
         ge=logging.NOTSET,
-        le=logging.CRITICAL,
-        description="Log level",
+        description="Log level (accepts string names like 'INFO' or integer values)",
     )
 
     @field_validator("database_uri", mode="before")
@@ -106,6 +105,28 @@ class Config(BaseSettings):
                     v = v.replace("postgres://", "postgresql+asyncpg://", 1)
             return PostgresDsn(v)
         return v
+
+    @field_validator("log_level", mode="before")
+    @classmethod
+    def validate_log_level(cls, v: str | int) -> int:
+        """Convert string log level names to corresponding integer values."""
+        if isinstance(v, int):
+            if v < logging.NOTSET:
+                return logging.INFO
+            return v
+
+        if isinstance(v, str):
+            env_val = v.upper()
+            log_level = (
+                int(env_val)
+                if env_val.isdigit()
+                else getattr(logging, env_val, logging.INFO)
+            )
+            if not isinstance(log_level, int) or log_level < logging.NOTSET:
+                return logging.INFO
+            return log_level
+
+        return logging.INFO
 
 
 @lru_cache(maxsize=1)
