@@ -155,19 +155,3 @@ jobs:
           PR_URL: ${{ github.event.pull_request.html_url }}
         run: |
           gh pr review --approve "$PR_URL" --body "🤖 Auto-approved by @cicdbot - All CI tests passed successfully!"
-
-      - name: Add success comment
-        env:
-          GH_TOKEN: ${{ secrets.CICDBOT_TOKEN }}
-          PR_URL: ${{ github.event.pull_request.html_url }}
-        run: |
-          gh pr comment "$PR_URL" --body "🎉 **Auto-approval complete!**
-
-          All CI tests have passed successfully:
-          - ✅ Code formatting checks
-          - ✅ Linting
-          - ✅ Unit tests with coverage
-          - ✅ Integration tests
-          - ✅ Database migrations
-
-          This PR has been automatically approved by @cicdbot and is ready for merge."
