@@ -1,6 +1,6 @@
 # AI Integration
 
-I’m a firm believer that anything a human doesn’t have to do by hand should be automated — and that absolutely includes how we write, review and deploy code. In CityHive, AI isn’t an add-on, it’s woven into the very fabric of development process:
+I’m a firm believer that anything a human doesn’t have to do by hand should be automated — and that absolutely includes how we write, review and deploy code. In CityHive, AI isn’t an add-on, it’s woven into the very fabric of the development process:
 
 ## Cursor AI Integration
 
@@ -14,14 +14,13 @@ To enrich the AI’s perspective, we run two [MCP](https://modelcontextprotocol.
 
 Every pull request is then auto-reviewed by two LLM-powered bots. [GitHub Copilot](https://github.com/features/copilot) lays down broad-stroke suggestions — boilerplate, idioms, imports — while [CodeRabbit](https://www.coderabbit.ai/) delivers focused critiques, refactorings and policy checks. CodeRabbit’s behavior is entirely driven by its code-based config, so tweaks can be made in-repo to refine thresholds or rules. In tandem, they elevate code quality far beyond manual review alone.
 
-Beyond these LLM tools, CityHive leverages additional automation agents for dependency audits, test-coverage reporting,and other routine tasks. Together, they free me to focus on features and architecture instead of repetitive chores.
+Beyond these LLM tools, CityHive leverages additional automation agents for dependency audits, test-coverage reporting, and other routine tasks. Together, they free me to focus on features and architecture instead of repetitive chores.
 
 ## Conclusion
 
-By weaving AI rules, dynamic context servers and intelligent review bots into a single pipeline, CityHive achieves faster iteration, consistently formatted code, reliable database integrations and a continual feedback loop — all without ever leaving IDE.
+By weaving AI rules, dynamic context servers and intelligent review bots into a single pipeline, CityHive achieves faster iteration, consistently formatted code, reliable database integrations and a continual feedback loop — all without ever leaving the IDE.
 
 The AI integration provides a foundation for enhanced development workflows. The current setup focuses on:
-
 - Understanding project architecture and patterns
 - Providing database context for code generation
 - Following established coding standards and testing practices
