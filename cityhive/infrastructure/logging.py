@@ -15,6 +15,51 @@ import structlog
 from structlog.typing import FilteringBoundLogger, Processor
 
 
+def parse_log_level(value: str | int) -> int:
+    """
+    Parse log level from string or integer input.
+
+    Converts string log level names (like "INFO", "DEBUG") to their corresponding
+    integer values, handling both numeric strings and level names with proper
+    fallback to INFO for invalid values.
+
+    Args:
+        value: Log level as string (name or numeric) or integer
+
+    Returns:
+        Log level as integer, defaults to logging.INFO for invalid values
+
+    Examples:
+        >>> parse_log_level("INFO")
+        20
+        >>> parse_log_level("debug")
+        10
+        >>> parse_log_level("30")
+        30
+        >>> parse_log_level(40)
+        40
+        >>> parse_log_level("INVALID")
+        20
+    """
+    if isinstance(value, int):
+        if value < logging.NOTSET:
+            return logging.INFO
+        return value
+
+    if isinstance(value, str):
+        env_val = value.strip().upper()
+        log_level = (
+            int(env_val)
+            if env_val.isdigit()
+            else getattr(logging, env_val, logging.INFO)
+        )
+        if not isinstance(log_level, int) or log_level < logging.NOTSET:
+            return logging.INFO
+        return log_level
+
+    return logging.INFO
+
+
 def configure_stdlib_logging(log_level: int = logging.INFO) -> None:
     """
     Configure Python's standard library logging to work with structlog.
@@ -162,14 +207,8 @@ def setup_logging(
     """
 
     if log_level is None:
-        env_val = os.getenv("LOG_LEVEL", str(logging.INFO)).strip().upper()
-        log_level = (
-            int(env_val)
-            if env_val.isdigit()
-            else getattr(logging, env_val, logging.INFO)
-        )
-    if not isinstance(log_level, int) or log_level < logging.NOTSET:
-        log_level = logging.INFO
+        env_val = os.getenv("LOG_LEVEL", str(logging.INFO))
+        log_level = parse_log_level(env_val)
 
     if force_json is None:
         force_json = os.getenv("LOG_FORCE_JSON", "true").strip().lower() == "true"
