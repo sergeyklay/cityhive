@@ -8,7 +8,7 @@ CityHive includes AI-assisted development configuration for working with AI codi
 
 The project includes Cursor AI configuration in the `.cursor/rules/` directory with actual rule files:
 
-- `ai-collaboration.mdc`: Guidelines for working with AI assistants
+- `always-enable-context7.mdc`: Guidelines for working with [Context7 MCP Server](https://context7.com)
 - `cursor-rules.mdc`: Cursor-specific development rules
 - `dependency-management.mdc`: Package management guidelines
 - `project-overview.mdc`: Project structure and overview
