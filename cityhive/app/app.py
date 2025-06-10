@@ -6,6 +6,7 @@ from aiohttp import web
 
 from cityhive.app.middlewares import setup_middlewares
 from cityhive.app.routes import setup_routes, setup_static_routes
+from cityhive.domain.hive.service import HiveServiceFactory
 from cityhive.domain.user.service import UserServiceFactory
 from cityhive.infrastructure.config import Config, get_config
 from cityhive.infrastructure.db import pg_context
@@ -13,6 +14,7 @@ from cityhive.infrastructure.logging import get_logger, setup_logging
 from cityhive.infrastructure.typedefs import (
     config_key,
     db_key,
+    hive_service_factory_key,
     user_service_factory_key,
 )
 
@@ -37,6 +39,18 @@ def init_user_service(app: web.Application) -> None:
     app[user_service_factory_key] = user_service_factory
 
 
+def init_hive_service(app: web.Application) -> None:
+    """
+    Initialize hive service with proper dependency injection.
+
+    Creates and registers a HiveServiceFactory that can create HiveService instances
+    with proper session management for each request.
+    """
+    session_factory = app[db_key]
+    hive_service_factory = HiveServiceFactory(session_factory)
+    app[hive_service_factory_key] = hive_service_factory
+
+
 async def init_services_context(app: web.Application) -> AsyncGenerator[None, None]:
     """
     Startup context for initializing services after database is ready.
@@ -48,6 +62,7 @@ async def init_services_context(app: web.Application) -> AsyncGenerator[None, No
     database cleanup context has set up the session factory.
     """
     init_user_service(app)
+    init_hive_service(app)
 
     yield
 

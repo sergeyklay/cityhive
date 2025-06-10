@@ -8,6 +8,7 @@ application-wide data in the aiohttp Application instance.
 from aiohttp import web
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
+from cityhive.domain.hive.service import HiveServiceFactory
 from cityhive.domain.user.service import UserServiceFactory
 from cityhive.infrastructure.config import Config
 
@@ -22,3 +23,6 @@ db_key = web.AppKey("database", async_sessionmaker)
 
 user_service_factory_key = web.AppKey("user_service_factory", UserServiceFactory)
 """User service factory key for storing UserServiceFactory instance."""
+
+hive_service_factory_key = web.AppKey("hive_service_factory", HiveServiceFactory)
+"""Hive service factory key for storing HiveServiceFactory instance."""

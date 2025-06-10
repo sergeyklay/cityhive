@@ -25,13 +25,17 @@ cityhive/
 ├── domain/                      # Domain Layer
 │   ├── models.py                # Domain entities (SQLAlchemy models)
 │   ├── services/                # Cross-cutting domain services
-│   │   ├── health.py            # Health check service
-│   │   └── hive_service.py      # Hive business logic
-│   └── user/                    # User domain aggregate
+│   │   └── health.py            # Health check service
+│   ├── user/                    # User domain aggregate
+│   │   ├── __init__.py          # Domain exports
+│   │   ├── service.py           # User business logic
+│   │   ├── repository.py        # User data access interface
+│   │   └── exceptions.py        # User-specific exceptions
+│   └── hive/                    # Hive domain aggregate
 │       ├── __init__.py          # Domain exports
-│       ├── service.py           # User business logic
-│       ├── repository.py        # User data access interface
-│       └── exceptions.py        # User-specific exceptions
+│       ├── service.py           # Hive business logic
+│       ├── repository.py        # Hive data access interface
+│       └── exceptions.py        # Hive-specific exceptions
 ├── infrastructure/              # Infrastructure Layer
 │   ├── db.py                    # Database session management
 │   ├── config.py                # Configuration management
@@ -43,7 +47,8 @@ tests/                           # Test suites
 ├── unit/                        # Unit tests (fast, isolated, mocked)
 │   ├── app/                     # Web layer tests
 │   ├── domain/                  # Domain layer tests
-│   │   └── user/                # User domain tests
+│   │   ├── user/                # User domain tests
+│   │   └── hive/                # Hive domain tests
 │   └── infrastructure/          # Infrastructure tests
 └── integration/                 # Integration tests (real dependencies)
 migration/                       # Alembic database migrations
@@ -136,11 +141,24 @@ class UserServiceFactory:
         repository = UserRepository(session)
         return UserService(repository)
 
+class HiveServiceFactory:
+    def __init__(self, session_factory: async_sessionmaker):
+        self._session_factory = session_factory
+
+    def create_service(self, session: AsyncSession) -> HiveService:
+        repository = HiveRepository(session)
+        return HiveService(repository)
+
 # Application-level registration
 async def init_services(app: web.Application) -> None:
     session_factory = app[db_key]
+
+    # Register all service factories
     user_service_factory = UserServiceFactory(session_factory)
     app[user_service_factory_key] = user_service_factory
+
+    hive_service_factory = HiveServiceFactory(session_factory)
+    app[hive_service_factory_key] = hive_service_factory
 ```
 
 ### Repository Pattern
@@ -191,13 +209,16 @@ Dependencies are registered with type-safe keys:
 ```python
 # Type-safe application keys
 user_service_factory_key = web.AppKey("user_service_factory", UserServiceFactory)
+hive_service_factory_key = web.AppKey("hive_service_factory", HiveServiceFactory)
 db_key = web.AppKey("database", async_sessionmaker)
 
 # Registration in application factory
 app[user_service_factory_key] = user_service_factory
+app[hive_service_factory_key] = hive_service_factory
 
 # Usage with full type safety
-service_factory = request.app[user_service_factory_key]  # Type: UserServiceFactory
+user_service_factory = request.app[user_service_factory_key]  # Type: UserServiceFactory
+hive_service_factory = request.app[hive_service_factory_key]  # Type: HiveServiceFactory
 ```
 
 ### Transaction Management
@@ -228,7 +249,7 @@ async def create_user(request: web.Request) -> web.Response:
 Domain exceptions are converted to HTTP responses in the web layer:
 
 ```python
-# Domain exceptions
+# User domain exceptions
 class UserError(Exception):
     """Base exception for user domain."""
 
@@ -237,12 +258,36 @@ class DuplicateUserError(UserError):
         self.email = email
         super().__init__(f"User with email {email} already exists")
 
-# Web layer conversion
+# Hive domain exceptions
+class HiveError(Exception):
+    """Base exception for hive domain."""
+
+class UserNotFoundError(HiveError):
+    def __init__(self, user_id: int):
+        self.user_id = user_id
+        super().__init__(f"User with ID {user_id} not found")
+
+class InvalidLocationError(HiveError):
+    def __init__(self, message: str):
+        self.message = message
+        super().__init__(message)
+
+# Web layer conversion - User endpoints
 try:
     user = await user_service.register_user(input_data)
 except DuplicateUserError:
     return create_error_response("Email already exists", status=409)
 except UserError as e:
+    return create_error_response(str(e), status=400)
+
+# Web layer conversion - Hive endpoints
+try:
+    hive = await hive_service.create_hive(input_data)
+except UserNotFoundError:
+    return create_error_response("User not found", status=404)
+except InvalidLocationError as e:
+    return create_error_response(e.message, status=400)
+except HiveError as e:
     return create_error_response(str(e), status=400)
 ```
 
