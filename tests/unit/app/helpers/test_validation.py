@@ -4,6 +4,8 @@ Tests for validation helpers.
 These tests cover email validation, field validation, and sanitization functions.
 """
 
+import math
+
 import pytest
 
 from cityhive.app.helpers.validation import (
@@ -413,20 +415,37 @@ def test_sanitize_numeric_field_returns_none_for_invalid_strings(invalid_input):
     assert result is None
 
 
-@pytest.mark.parametrize(
-    "special_input",
-    [
-        "NaN",
-        "inf",
-        "infinity",
-        "-inf",
-        "-infinity",
-    ],
-)
-def test_sanitize_numeric_field_converts_special_float_strings(special_input):
-    result = sanitize_numeric_field(special_input)
+def test_sanitize_numeric_field_converts_nan_string():
+    result = sanitize_numeric_field("NaN")
 
     assert isinstance(result, float)
+    assert math.isnan(result)
+
+
+def test_sanitize_numeric_field_converts_positive_infinity_strings():
+    result_inf = sanitize_numeric_field("inf")
+    result_infinity = sanitize_numeric_field("infinity")
+
+    assert isinstance(result_inf, float)
+    assert math.isinf(result_inf)
+    assert result_inf > 0
+
+    assert isinstance(result_infinity, float)
+    assert math.isinf(result_infinity)
+    assert result_infinity > 0
+
+
+def test_sanitize_numeric_field_converts_negative_infinity_strings():
+    result_neg_inf = sanitize_numeric_field("-inf")
+    result_neg_infinity = sanitize_numeric_field("-infinity")
+
+    assert isinstance(result_neg_inf, float)
+    assert math.isinf(result_neg_inf)
+    assert result_neg_inf < 0
+
+    assert isinstance(result_neg_infinity, float)
+    assert math.isinf(result_neg_infinity)
+    assert result_neg_infinity < 0
 
 
 def test_sanitize_numeric_field_handles_unsupported_types():
