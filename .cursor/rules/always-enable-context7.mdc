@@ -1,6 +1,6 @@
 ---
 description: Whenever you use a library or a tool that has documentation.
-globs:
+globs: **/*
 alwaysApply: true
 ---
 
