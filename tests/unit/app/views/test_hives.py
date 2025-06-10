@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, Mock
 import pytest
 from aiohttp.test_utils import make_mocked_request
 
-from cityhive.app.views.hives import create_hive
+from cityhive.app.views.hives import create_hive, list_hives
 from cityhive.domain.hive import InvalidLocationError, UserNotFoundError
 from cityhive.domain.models import Hive
 from cityhive.infrastructure.typedefs import db_key, hive_service_factory_key
@@ -211,4 +211,124 @@ async def test_create_hive_returns_correct_content_type_header(
     response = await create_hive(request)
 
     assert response.status == 201
+    assert response.content_type == "application/json"
+
+
+# Tests for list_hives view function
+
+
+@pytest.fixture
+def mock_hive_list():
+    """Create a list of mock hives for testing."""
+    hives = []
+    for i in range(3):
+        hive = Hive(
+            user_id=1,
+            name=f"Hive {i + 1}",
+            frame_type="Langstroth",
+            installed_at=datetime(2024, 1, 15, 10, 30),
+        )
+        hive.id = i + 1
+        hives.append(hive)
+    return hives
+
+
+async def test_list_hives_with_valid_user_id_returns_success(
+    app_with_services, mock_hive_list
+):
+    request = make_mocked_request("GET", "/api/hives?user_id=1", app=app_with_services)
+
+    mock_hive_service = AsyncMock()
+    mock_hive_service.get_hives_by_user_id.return_value = mock_hive_list
+
+    mock_service_factory = app_with_services[hive_service_factory_key]
+    mock_service_factory.create_service.return_value = mock_hive_service
+
+    response = await list_hives(request)
+
+    assert response.status == 200
+    mock_service_factory.create_service.assert_called_once()
+    mock_hive_service.get_hives_by_user_id.assert_called_once_with(1)
+
+
+async def test_list_hives_with_empty_list_returns_success(app_with_services):
+    request = make_mocked_request("GET", "/api/hives?user_id=1", app=app_with_services)
+
+    mock_hive_service = AsyncMock()
+    mock_hive_service.get_hives_by_user_id.return_value = []
+
+    mock_service_factory = app_with_services[hive_service_factory_key]
+    mock_service_factory.create_service.return_value = mock_hive_service
+
+    response = await list_hives(request)
+
+    assert response.status == 200
+    mock_service_factory.create_service.assert_called_once()
+    mock_hive_service.get_hives_by_user_id.assert_called_once_with(1)
+
+
+async def test_list_hives_without_user_id_returns_bad_request(app_with_services):
+    request = make_mocked_request("GET", "/api/hives", app=app_with_services)
+
+    response = await list_hives(request)
+
+    assert response.status == 400
+
+
+async def test_list_hives_with_invalid_user_id_returns_bad_request(app_with_services):
+    request = make_mocked_request(
+        "GET", "/api/hives?user_id=invalid", app=app_with_services
+    )
+
+    response = await list_hives(request)
+
+    assert response.status == 400
+
+
+async def test_list_hives_with_negative_user_id_returns_bad_request(app_with_services):
+    request = make_mocked_request("GET", "/api/hives?user_id=-1", app=app_with_services)
+
+    response = await list_hives(request)
+
+    assert response.status == 400
+
+
+async def test_list_hives_with_zero_user_id_returns_bad_request(app_with_services):
+    request = make_mocked_request("GET", "/api/hives?user_id=0", app=app_with_services)
+
+    response = await list_hives(request)
+
+    assert response.status == 400
+
+
+async def test_list_hives_with_service_exception_returns_internal_error(
+    app_with_services,
+):
+    request = make_mocked_request("GET", "/api/hives?user_id=1", app=app_with_services)
+
+    mock_hive_service = AsyncMock()
+    mock_hive_service.get_hives_by_user_id.side_effect = Exception("Database error")
+
+    mock_service_factory = app_with_services[hive_service_factory_key]
+    mock_service_factory.create_service.return_value = mock_hive_service
+
+    response = await list_hives(request)
+
+    assert response.status == 500
+
+
+async def test_list_hives_returns_correct_content_type_header(
+    app_with_services, mock_hive_list
+):
+    request = make_mocked_request("GET", "/api/hives?user_id=1", app=app_with_services)
+
+    mock_hive_service = AsyncMock()
+    mock_hive_service.get_hives_by_user_id.return_value = mock_hive_list
+
+    mock_service_factory = app_with_services[hive_service_factory_key]
+    mock_service_factory.create_service.return_value = mock_hive_service
+
+    response = await list_hives(request)
+
+    assert response.status == 200
     assert response.content_type == "application/json"
