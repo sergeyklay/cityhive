@@ -2,6 +2,7 @@
 
 [![codecov](https://codecov.io/gh/sergeyklay/cityhive/graph/badge.svg?token=aXIi7iNGl3)](https://codecov.io/gh/sergeyklay/cityhive)
 [![CI](https://github.com/sergeyklay/cityhive/actions/workflows/ci.yml/badge.svg)](https://github.com/sergeyklay/cityhive/actions/workflows/ci.yml)
+![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/sergeyklay/cityhive?utm_source=oss&utm_medium=github&utm_campaign=sergeyklay%2Fcityhive&labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit+Reviews)
 
 **An experimental aiohttp microservice for urban beehive management and technology exploration.**
 
