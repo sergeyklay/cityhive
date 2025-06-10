@@ -151,14 +151,14 @@ jobs:
     steps:
       - name: Auto-approve pull request
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.CICDBOT_TOKEN }}
           PR_URL: ${{ github.event.pull_request.html_url }}
         run: |
           gh pr review --approve "$PR_URL" --body "🤖 Auto-approved by @cicdbot - All CI tests passed successfully!"
 
       - name: Add success comment
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.CICDBOT_TOKEN }}
           PR_URL: ${{ github.event.pull_request.html_url }}
         run: |
           gh pr comment "$PR_URL" --body "🎉 **Auto-approval complete!**
