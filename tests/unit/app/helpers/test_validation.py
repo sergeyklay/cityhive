@@ -10,6 +10,7 @@ from cityhive.app.helpers.validation import (
     ValidationResult,
     get_normalized_email,
     sanitize_email_field,
+    sanitize_numeric_field,
     sanitize_string_field,
     validate_coordinates,
     validate_email,
@@ -333,3 +334,102 @@ def test_validate_coordinates_returns_validation_result_instance():
     result = validate_coordinates(45.5, -73.5)
 
     assert isinstance(result, ValidationResult)
+
+
+def test_sanitize_numeric_field_returns_none_for_none_input():
+    result = sanitize_numeric_field(None)
+
+    assert result is None
+
+
+def test_sanitize_numeric_field_returns_none_for_empty_string():
+    result = sanitize_numeric_field("")
+
+    assert result is None
+
+
+def test_sanitize_numeric_field_returns_none_for_whitespace_string():
+    result = sanitize_numeric_field("   ")
+
+    assert result is None
+
+
+@pytest.mark.parametrize(
+    "input_value,expected_output",
+    [
+        (42, 42.0),
+        (42.5, 42.5),
+        (-10, -10.0),
+        (0, 0.0),
+        (3.14159, 3.14159),
+    ],
+)
+def test_sanitize_numeric_field_converts_numeric_types_to_float(
+    input_value, expected_output
+):
+    result = sanitize_numeric_field(input_value)
+
+    assert result == expected_output
+    assert isinstance(result, float)
+
+
+@pytest.mark.parametrize(
+    "input_string,expected_output",
+    [
+        ("42", 42.0),
+        ("42.5", 42.5),
+        ("-10", -10.0),
+        ("0", 0.0),
+        ("3.14159", 3.14159),
+        ("  45.5  ", 45.5),
+        ("-73.123", -73.123),
+    ],
+)
+def test_sanitize_numeric_field_converts_valid_numeric_strings_to_float(
+    input_string, expected_output
+):
+    result = sanitize_numeric_field(input_string)
+
+    assert result == expected_output
+    assert isinstance(result, float)
+
+
+@pytest.mark.parametrize(
+    "invalid_input",
+    [
+        "invalid",
+        "abc123",
+        "12.34.56",
+        "not_a_number",
+        "42x",
+        "x42",
+        "42 43",
+        "12,34",
+    ],
+)
+def test_sanitize_numeric_field_returns_none_for_invalid_strings(invalid_input):
+    result = sanitize_numeric_field(invalid_input)
+
+    assert result is None
+
+
+@pytest.mark.parametrize(
+    "special_input",
+    [
+        "NaN",
+        "inf",
+        "infinity",
+        "-inf",
+        "-infinity",
+    ],
+)
+def test_sanitize_numeric_field_converts_special_float_strings(special_input):
+    result = sanitize_numeric_field(special_input)
+
+    assert isinstance(result, float)
+
+
+def test_sanitize_numeric_field_handles_unsupported_types():
+    result = sanitize_numeric_field(object())  # type: ignore[arg-type]
+
+    assert result is None
