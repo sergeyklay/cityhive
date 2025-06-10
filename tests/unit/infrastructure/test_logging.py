@@ -227,6 +227,108 @@ def test_setup_logging_with_force_json_false(mocker):
     )
 
 
+@pytest.mark.parametrize(
+    "env_value,expected_log_level",
+    [
+        ("10", logging.DEBUG),
+        ("20", logging.INFO),
+        ("30", logging.WARNING),
+        ("40", logging.ERROR),
+        ("50", logging.CRITICAL),
+        ("DEBUG", logging.DEBUG),
+        ("INFO", logging.INFO),
+        ("WARNING", logging.WARNING),
+        ("ERROR", logging.ERROR),
+        ("CRITICAL", logging.CRITICAL),
+        ("debug", logging.DEBUG),
+        ("info", logging.INFO),
+        ("warning", logging.WARNING),
+        ("error", logging.ERROR),
+        ("critical", logging.CRITICAL),
+        ("Debug", logging.DEBUG),
+        ("Info", logging.INFO),
+        ("Warning", logging.WARNING),
+        ("INVALID", logging.INFO),
+        ("xyz123", logging.INFO),
+        ("", logging.INFO),
+        ("999", 999),
+        ("0", logging.NOTSET),
+    ],
+)
+def test_setup_logging_parses_log_level_environment_variable_correctly(
+    mocker, env_value, expected_log_level
+):
+    mock_configure_structlog = mocker.patch(
+        "cityhive.infrastructure.logging.configure_structlog"
+    )
+    mock_get_logger = mocker.patch("cityhive.infrastructure.logging.get_logger")
+    mock_logger = MagicMock()
+    mock_get_logger.return_value = mock_logger
+
+    def mock_getenv(key, default=None):
+        if key == "LOG_LEVEL":
+            return env_value
+        if key == "LOG_FORCE_JSON":
+            return "true"
+        return default
+
+    mocker.patch("os.getenv", side_effect=mock_getenv)
+
+    setup_logging()
+
+    mock_configure_structlog.assert_called_once_with(
+        force_json=True, log_level=expected_log_level
+    )
+
+
+def test_setup_logging_falls_back_to_info_when_log_level_env_var_missing(mocker):
+    mock_configure_structlog = mocker.patch(
+        "cityhive.infrastructure.logging.configure_structlog"
+    )
+    mock_get_logger = mocker.patch("cityhive.infrastructure.logging.get_logger")
+    mock_logger = MagicMock()
+    mock_get_logger.return_value = mock_logger
+
+    def mock_getenv(key, default=None):
+        if key == "LOG_LEVEL":
+            return default
+        if key == "LOG_FORCE_JSON":
+            return "true"
+        return default
+
+    mocker.patch("os.getenv", side_effect=mock_getenv)
+
+    setup_logging()
+
+    mock_configure_structlog.assert_called_once_with(
+        force_json=True, log_level=logging.INFO
+    )
+
+
+def test_setup_logging_respects_explicit_log_level_parameter_over_env_var(mocker):
+    mock_configure_structlog = mocker.patch(
+        "cityhive.infrastructure.logging.configure_structlog"
+    )
+    mock_get_logger = mocker.patch("cityhive.infrastructure.logging.get_logger")
+    mock_logger = MagicMock()
+    mock_get_logger.return_value = mock_logger
+
+    def mock_getenv(key, default=None):
+        if key == "LOG_LEVEL":
+            return "ERROR"
+        if key == "LOG_FORCE_JSON":
+            return "true"
+        return default
+
+    mocker.patch("os.getenv", side_effect=mock_getenv)
+
+    setup_logging(log_level=logging.DEBUG)
+
+    mock_configure_structlog.assert_called_once_with(
+        force_json=True, log_level=logging.DEBUG
+    )
+
+
 def test_configure_request_logging_clears_contextvars(mocker):
     mock_clear = mocker.patch("structlog.contextvars.clear_contextvars")
 

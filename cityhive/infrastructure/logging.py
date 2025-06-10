@@ -162,7 +162,14 @@ def setup_logging(
     """
 
     if log_level is None:
-        log_level = int(os.getenv("LOG_LEVEL", logging.INFO))
+        env_val = os.getenv("LOG_LEVEL", str(logging.INFO)).upper()
+        log_level = (
+            int(env_val)
+            if env_val.isdigit()
+            else getattr(logging, env_val, logging.INFO)
+        )
+    if not isinstance(log_level, int) or log_level < logging.NOTSET:
+        log_level = logging.INFO
 
     if force_json is None:
         force_json = os.getenv("LOG_FORCE_JSON", "true").strip().lower() == "true"
