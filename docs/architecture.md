@@ -24,18 +24,22 @@ cityhive/
 │   └── app.py                   # Application factory + service initialization
 ├── domain/                      # Domain Layer
 │   ├── models.py                # Domain entities (SQLAlchemy models)
-│   ├── services/                # Cross-cutting domain services
-│   │   └── health.py            # Health check service
 │   ├── user/                    # User domain aggregate
 │   │   ├── __init__.py          # Domain exports
 │   │   ├── service.py           # User business logic
 │   │   ├── repository.py        # User data access interface
 │   │   └── exceptions.py        # User-specific exceptions
-│   └── hive/                    # Hive domain aggregate
+│   ├── hive/                    # Hive domain aggregate
+│   │   ├── __init__.py          # Domain exports
+│   │   ├── service.py           # Hive business logic
+│   │   ├── repository.py        # Hive data access interface
+│   │   └── exceptions.py        # Hive-specific exceptions
+│   └── health/                  # Health domain aggregate
 │       ├── __init__.py          # Domain exports
-│       ├── service.py           # Hive business logic
-│       ├── repository.py        # Hive data access interface
-│       └── exceptions.py        # Hive-specific exceptions
+│       ├── service.py           # Health check business logic
+│       ├── repository.py        # Health check data access interface
+│       ├── models.py            # Health-specific domain models
+│       └── exceptions.py        # Health-specific exceptions
 ├── infrastructure/              # Infrastructure Layer
 │   ├── db.py                    # Database session management
 │   ├── config.py                # Configuration management
@@ -48,7 +52,8 @@ tests/                           # Test suites
 │   ├── app/                     # Web layer tests
 │   ├── domain/                  # Domain layer tests
 │   │   ├── user/                # User domain tests
-│   │   └── hive/                # Hive domain tests
+│   │   ├── hive/                # Hive domain tests
+│   │   └── health/              # Health domain tests
 │   └── infrastructure/          # Infrastructure tests
 └── integration/                 # Integration tests (real dependencies)
 migration/                       # Alembic database migrations
