@@ -162,7 +162,7 @@ def setup_logging(
     """
 
     if log_level is None:
-        env_val = os.getenv("LOG_LEVEL", str(logging.INFO)).upper()
+        env_val = os.getenv("LOG_LEVEL", str(logging.INFO)).strip().upper()
         log_level = (
             int(env_val)
             if env_val.isdigit()
