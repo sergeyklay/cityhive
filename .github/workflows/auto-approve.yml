@@ -1,0 +1,73 @@
+# Auto-approve pull requests when CI tests pass.
+#
+# This workflow automatically approves pull requests using @cicdbot
+# if all CI tests pass successfully, streamlining the development process
+# while maintaining code quality standards.
+
+name: Auto-approve
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types:
+      - completed
+
+permissions:
+  pull-requests: write
+  actions: read
+
+jobs:
+  auto-approve:
+    name: Auto-approve PR
+    runs-on: ubuntu-latest
+    # Only run if:
+    # 1. The triggering workflow succeeded
+    # 2. The original event was a pull request
+    # 3. The PR is not from a fork (security measure)
+    if: >
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.head_repository.full_name == github.repository
+
+    steps:
+      - name: Get PR number
+        id: pr
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const core = require('@actions/core');
+
+            const pulls = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              head: `${context.payload.workflow_run.head_repository.owner.login}:${context.payload.workflow_run.head_branch}`,
+              state: 'open'
+            });
+
+            if (pulls.data.length === 0) {
+              console.log('No open PR found for this branch');
+              return;
+            }
+
+            const pr = pulls.data[0];
+            console.log(`Found PR #${pr.number}: ${pr.title}`);
+            core.setOutput('number', pr.number);
+            core.setOutput('url', pr.html_url);
+
+      - name: Approve PR
+        if: steps.pr.outputs.number
+        run: |
+          echo "Approving PR #${{ steps.pr.outputs.number }}"
+          gh pr review "${{ steps.pr.outputs.url }}" \
+            --approve \
+            --body "✅ Auto-approved by @cicdbot after successful CI tests"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Add success comment
+        if: steps.pr.outputs.number
+        run: |
+          gh pr comment "${{ steps.pr.outputs.url }}" \
+            --body "🎉 All CI tests passed! This PR has been automatically approved and is ready for merge."
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
