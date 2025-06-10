@@ -4,7 +4,7 @@ Unit tests for InspectionService.
 Tests demonstrate improved testability with dependency injection and mocking.
 """
 
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from unittest.mock import AsyncMock
 
 import pytest
@@ -140,7 +140,7 @@ async def test_create_inspection_scheduled_too_far_in_future(
     sample_hive: Hive,
 ):
     """Test inspection creation fails when scheduled too far in the future."""
-    far_future_date = date(2026, 12, 31)  # More than 1 year ahead
+    far_future_date = date.today() + timedelta(days=366)  # >1 year ahead
     creation_input = InspectionCreationInput(
         hive_id=1,
         scheduled_for=far_future_date,
