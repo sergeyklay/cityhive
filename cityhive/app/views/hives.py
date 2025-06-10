@@ -184,13 +184,11 @@ async def list_hives(request: web.Request) -> web.Response:
                     }
 
                     # Add location data if available
-                    if hive.location:
-                        # Note: In a real implementation, you would extract coordinates
-                        # from the PostGIS geometry. For now, we'll set to None since
-                        # the location extraction logic is not implemented yet.
-                        hive_data["location"] = None
-                    else:
-                        hive_data["location"] = None
+                    # Note: In a real implementation, you would extract coordinates
+                    # from the PostGIS geometry. For now, we'll set to None since
+                    # the location extraction logic is not implemented yet.
+                    # TODO(serghei): Implement location extraction logic
+                    hive_data["location"] = None
 
                     hives_data.append(hive_data)
 
