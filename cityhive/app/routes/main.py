@@ -8,6 +8,7 @@ logically for better organization and future API support.
 from aiohttp import web
 
 from cityhive.app.routes.hives import hive_routes
+from cityhive.app.routes.inspections import inspection_routes
 from cityhive.app.routes.monitoring import monitoring_routes
 from cityhive.app.routes.users import user_routes
 from cityhive.app.routes.web import web_routes
@@ -25,6 +26,7 @@ def setup_routes(app: web.Application) -> None:
     # Add entity-specific API routes
     app.add_routes(user_routes)
     app.add_routes(hive_routes)
+    app.add_routes(inspection_routes)
 
 
 def setup_static_routes(app: web.Application) -> None:

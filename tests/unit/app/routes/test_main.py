@@ -21,6 +21,7 @@ def test_setup_routes_adds_all_route_tables():
         patch("cityhive.app.routes.main.monitoring_routes") as mock_monitoring_routes,
         patch("cityhive.app.routes.main.user_routes") as mock_user_routes,
         patch("cityhive.app.routes.main.hive_routes") as mock_hive_routes,
+        patch("cityhive.app.routes.main.inspection_routes") as mock_inspection_routes,
     ):
         setup_routes(app)
 
@@ -29,9 +30,10 @@ def test_setup_routes_adds_all_route_tables():
             mock_monitoring_routes,
             mock_user_routes,
             mock_hive_routes,
+            mock_inspection_routes,
         ]
 
-        assert app.add_routes.call_count == 4
+        assert app.add_routes.call_count == 5
         for expected_call in expected_calls:
             app.add_routes.assert_any_call(expected_call)
 

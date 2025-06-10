@@ -8,6 +8,7 @@ from cityhive.app.middlewares import setup_middlewares
 from cityhive.app.routes import setup_routes, setup_static_routes
 from cityhive.domain.health.service import HealthServiceFactory
 from cityhive.domain.hive.service import HiveServiceFactory
+from cityhive.domain.inspection.service import InspectionServiceFactory
 from cityhive.domain.user.service import UserServiceFactory
 from cityhive.infrastructure.config import Config, get_config
 from cityhive.infrastructure.db import pg_context
@@ -17,6 +18,7 @@ from cityhive.infrastructure.typedefs import (
     db_key,
     health_service_factory_key,
     hive_service_factory_key,
+    inspection_service_factory_key,
     user_service_factory_key,
 )
 
@@ -53,6 +55,18 @@ def init_hive_service(app: web.Application) -> None:
     app[hive_service_factory_key] = hive_service_factory
 
 
+def init_inspection_service(app: web.Application) -> None:
+    """
+    Initialize inspection service with proper dependency injection.
+
+    Creates and registers an InspectionServiceFactory that can create InspectionService
+    instances with proper session management for each request.
+    """
+    session_factory = app[db_key]
+    inspection_service_factory = InspectionServiceFactory(session_factory)
+    app[inspection_service_factory_key] = inspection_service_factory
+
+
 def init_health_service(app: web.Application) -> None:
     """
     Initialize health service with proper dependency injection.
@@ -80,6 +94,7 @@ async def init_services_context(app: web.Application) -> AsyncGenerator[None, No
     """
     init_user_service(app)
     init_hive_service(app)
+    init_inspection_service(app)
     init_health_service(app)
 
     yield
