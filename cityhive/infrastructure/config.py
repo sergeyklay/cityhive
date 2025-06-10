@@ -10,6 +10,8 @@ from pathlib import Path
 from pydantic import Field, PostgresDsn, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from cityhive.infrastructure.logging import parse_log_level
+
 PROJECT_DIR = Path(__file__).parent.parent
 BASE_DIR = PROJECT_DIR.parent
 
@@ -90,6 +92,7 @@ class Config(BaseSettings):
     log_level: int = Field(
         default=logging.INFO,
         ge=logging.NOTSET,
+        le=logging.CRITICAL,
         description="Log level (accepts string names like 'INFO' or integer values)",
     )
 
@@ -110,23 +113,7 @@ class Config(BaseSettings):
     @classmethod
     def validate_log_level(cls, v: str | int) -> int:
         """Convert string log level names to corresponding integer values."""
-        if isinstance(v, int):
-            if v < logging.NOTSET:
-                return logging.INFO
-            return v
-
-        if isinstance(v, str):
-            env_val = v.upper()
-            log_level = (
-                int(env_val)
-                if env_val.isdigit()
-                else getattr(logging, env_val, logging.INFO)
-            )
-            if not isinstance(log_level, int) or log_level < logging.NOTSET:
-                return logging.INFO
-            return log_level
-
-        return logging.INFO
+        return parse_log_level(v)
 
 
 @lru_cache(maxsize=1)
