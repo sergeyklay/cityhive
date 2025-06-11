@@ -142,7 +142,6 @@ async def test_create_hive_with_user_not_found_returns_not_found(app_with_servic
     request = make_mocked_request("POST", "/api/hives", app=app_with_services)
     request.json = AsyncMock(return_value=data)
 
-    # Mock the service factory and service to raise UserNotFoundError
     mock_hive_service = AsyncMock()
     mock_hive_service.create_hive.side_effect = UserNotFoundError(999)
 
@@ -212,9 +211,6 @@ async def test_create_hive_returns_correct_content_type_header(
 
     assert response.status == 201
     assert response.content_type == "application/json"
-
-
-# Tests for list_hives view function
 
 
 @pytest.fixture
