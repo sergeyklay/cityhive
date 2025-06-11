@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 from geoalchemy2 import WKTElement
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from cityhive.domain.hive.exceptions import InvalidLocationError, UserNotFoundError
 from cityhive.domain.hive.repository import HiveRepository
@@ -172,14 +172,10 @@ class HiveService:
         Returns:
             Hive model if found, None otherwise
         """
-        logger.debug("Looking up hive by ID", hive_id=hive_id)
-
         hive = await self._hive_repository.get_by_id(hive_id)
         if not hive:
-            logger.debug("Hive not found", hive_id=hive_id)
             return None
 
-        logger.debug("Hive found", hive_id=hive_id, user_id=hive.user_id)
         return hive
 
     async def get_hives_by_user_id(self, user_id: int) -> list[Hive]:
@@ -192,19 +188,13 @@ class HiveService:
         Returns:
             List of hives owned by the user
         """
-        logger.debug("Looking up hives for user", user_id=user_id)
 
         hives = await self._hive_repository.get_by_user_id(user_id)
-        logger.debug("User hives found", user_id=user_id, hive_count=len(hives))
         return hives
 
 
 class HiveServiceFactory:
     """Factory for creating HiveService instances with proper session management."""
-
-    def __init__(self, session_factory: async_sessionmaker[AsyncSession]) -> None:
-        """Initialize the factory with a session factory."""
-        self._session_factory = session_factory
 
     def create_service(self, session: AsyncSession) -> HiveService:
         """
