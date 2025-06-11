@@ -223,6 +223,30 @@ async def test_create_inspection_with_integrity_error_returns_conflict(
     app_with_services[db_key]().session.rollback.assert_called_once()
 
 
+async def test_create_inspection_with_integrity_error_during_commit_returns_conflict(
+    app_with_services, mock_inspection
+):
+    """Test that IntegrityError during commit returns 409 conflict instead of 500."""
+    data = {"hive_id": 42, "scheduled_for": "2025-06-15"}
+    request = make_mocked_request("POST", "/api/inspections", app=app_with_services)
+    request.json = AsyncMock(return_value=data)
+
+    mock_inspection_service = AsyncMock()
+    mock_inspection_service.create_inspection.return_value = mock_inspection
+
+    app_with_services[db_key]().session.commit.side_effect = IntegrityError(
+        "deferred constraint violation", "params", Exception("deferred check")
+    )
+
+    mock_service_factory = app_with_services[inspection_service_factory_key]
+    mock_service_factory.create_service.return_value = mock_inspection_service
+
+    response = await create_inspection(request)
+
+    assert response.status == 409
+    app_with_services[db_key]().session.rollback.assert_called_once()
+
+
 async def test_create_inspection_returns_correct_content_type_header(
     app_with_services, mock_inspection
 ):
