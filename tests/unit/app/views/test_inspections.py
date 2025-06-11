@@ -5,6 +5,7 @@ from unittest.mock import AsyncMock, Mock
 
 import pytest
 from aiohttp.test_utils import make_mocked_request
+from sqlalchemy.exc import IntegrityError
 
 from cityhive.app.views.inspections import create_inspection
 from cityhive.domain.inspection import HiveNotFoundError, InvalidScheduleError
@@ -200,16 +201,17 @@ async def test_create_inspection_with_missing_required_field_returns_bad_request
     assert response.status == 400
 
 
-async def test_create_inspection_with_unexpected_exception_returns_internal_error(
+async def test_create_inspection_with_integrity_error_returns_conflict(
     app_with_services,
 ):
+    """Test that IntegrityError returns 409 conflict instead of 500."""
     data = {"hive_id": 42, "scheduled_for": "2025-06-15"}
     request = make_mocked_request("POST", "/api/inspections", app=app_with_services)
     request.json = AsyncMock(return_value=data)
 
     mock_inspection_service = AsyncMock()
-    mock_inspection_service.create_inspection.side_effect = Exception(
-        "Unexpected error"
+    mock_inspection_service.create_inspection.side_effect = IntegrityError(
+        "duplicate key value violates unique constraint", "params", Exception("orig")
     )
 
     mock_service_factory = app_with_services[inspection_service_factory_key]
@@ -217,7 +219,7 @@ async def test_create_inspection_with_unexpected_exception_returns_internal_erro
 
     response = await create_inspection(request)
 
-    assert response.status == 500
+    assert response.status == 409
     app_with_services[db_key]().session.rollback.assert_called_once()
 
 

@@ -9,6 +9,7 @@ from typing import Any, Awaitable, Callable
 
 from aiohttp import web
 from pydantic import ValidationError
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from cityhive.app.helpers.request import (
@@ -80,6 +81,10 @@ async def _handle_domain_errors(
             409,
             "Database constraint violation - operation conflicts with existing data",
         ),
+        IntegrityError: (
+            409,
+            "Database constraint violation - operation conflicts with existing data",
+        ),
     }
 
     try:
@@ -104,6 +109,12 @@ async def _handle_domain_errors(
                 "Inspection creation failed - database constraint violation",
                 error_type=type(e.original_error).__name__,
                 original_error=str(e.original_error),
+            )
+        elif isinstance(e, IntegrityError):
+            logger.warning(
+                "Inspection creation failed - database integrity error",
+                error_type=type(e).__name__,
+                error=str(e),
             )
 
         return create_error_response(message, status)
