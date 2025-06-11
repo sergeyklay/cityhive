@@ -8,8 +8,6 @@ Business-layer exceptions for health check operations.
 class HealthCheckError(Exception):
     """Base exception for health check related errors."""
 
-    pass
-
 
 class DatabaseHealthCheckError(HealthCheckError):
     """Raised when database health check fails."""

@@ -8,8 +8,6 @@ Business-layer exceptions for inspection operations.
 class InspectionError(Exception):
     """Base exception for inspection-related errors."""
 
-    pass
-
 
 class InvalidScheduleError(InspectionError):
     """Raised when invalid schedule date is provided."""

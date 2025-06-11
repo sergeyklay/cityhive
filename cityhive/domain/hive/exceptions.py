@@ -8,8 +8,6 @@ Business-layer exceptions for hive operations.
 class HiveError(Exception):
     """Base exception for hive-related errors."""
 
-    pass
-
 
 class InvalidLocationError(HiveError):
     """Raised when invalid location coordinates are provided."""
