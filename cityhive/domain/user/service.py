@@ -86,14 +86,10 @@ class UserService:
         Returns:
             User model if found, None otherwise
         """
-        logger.debug("Looking up user by email", email=email)
-
         user = await self._user_repository.get_by_email(email)
         if not user:
-            logger.debug("User not found", email=email)
             return None
 
-        logger.debug("User found", user_id=user.id, email=email)
         return user
 
 
