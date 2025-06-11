@@ -1,7 +1,7 @@
 """
-Unit tests for InspectionService.
+Tests for inspection domain service.
 
-Tests demonstrate improved testability with dependency injection and mocking.
+Validates business logic for inspection creation and management.
 """
 
 from datetime import date, datetime, timedelta, timezone
@@ -10,15 +10,14 @@ from unittest.mock import AsyncMock
 import pytest
 from sqlalchemy.exc import IntegrityError
 
-from cityhive.domain.inspection.exceptions import (
+from cityhive.domain.inspection import (
+    DatabaseConflictError,
     HiveNotFoundError,
+    InspectionCreationInput,
+    InspectionService,
     InvalidScheduleError,
 )
 from cityhive.domain.inspection.repository import InspectionRepository
-from cityhive.domain.inspection.service import (
-    InspectionCreationInput,
-    InspectionService,
-)
 from cityhive.domain.models import Hive, Inspection
 
 
@@ -140,7 +139,7 @@ async def test_create_inspection_scheduled_too_far_in_future(
     sample_hive: Hive,
 ):
     """Test inspection creation fails when scheduled too far in the future."""
-    far_future_date = date.today() + timedelta(days=366)  # >1 year ahead
+    far_future_date = date.today() + timedelta(days=366)
     creation_input = InspectionCreationInput(
         hive_id=1,
         scheduled_for=far_future_date,
@@ -167,10 +166,12 @@ async def test_create_inspection_database_integrity_error(
         "duplicate key violation", "params", Exception("orig error")
     )
 
-    with pytest.raises(InvalidScheduleError) as exc_info:
+    with pytest.raises(DatabaseConflictError) as exc_info:
         await inspection_service.create_inspection(valid_creation_input)
 
-    assert "data conflict" in str(exc_info.value)
+    assert "Database integrity constraint violation" in str(exc_info.value)
+    assert exc_info.value.original_error is not None
+    assert isinstance(exc_info.value.original_error, IntegrityError)
     mock_inspection_repository.save.assert_called_once()
 
 

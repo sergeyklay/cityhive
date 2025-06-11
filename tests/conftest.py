@@ -75,16 +75,13 @@ async def full_app_client(aiohttp_client):
 @pytest.fixture(autouse=True)
 def isolate_env():
     """Ensure complete test isolation from .env files and system environment."""
-    # Preserve DATABASE_URI for tests that need it (integration tests)
     test_env = {}
     if "DATABASE_URI" in os.environ:
-        # For local testing, convert Docker internal hostname to localhost
         database_uri = os.environ["DATABASE_URI"]
         if "cityhive-db" in database_uri:
             database_uri = database_uri.replace("cityhive-db", "localhost")
         test_env["DATABASE_URI"] = database_uri
     else:
-        # Provide a test default for unit tests
         test_env["DATABASE_URI"] = (
             "postgresql+asyncpg://cityhive:cityhive@localhost:5432/cityhive"
         )

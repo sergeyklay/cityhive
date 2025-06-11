@@ -137,7 +137,7 @@ def test_inspection_creation_input_scheduled_for_future_is_valid():
 def test_inspection_creation_input_notes_max_length():
     """Test that notes have a maximum length limit."""
     tomorrow = date.today() + timedelta(days=1)
-    long_notes = "x" * 1001  # Exceeds 1000 character limit
+    long_notes = "x" * 1001
 
     with pytest.raises(ValidationError) as exc_info:
         InspectionCreationInput(
@@ -154,7 +154,7 @@ def test_inspection_creation_input_notes_max_length():
 def test_inspection_creation_input_notes_at_max_length_is_valid():
     """Test that notes at exactly max length are valid."""
     tomorrow = date.today() + timedelta(days=1)
-    notes_at_limit = "x" * 1000  # Exactly 1000 characters
+    notes_at_limit = "x" * 1000
 
     input_data = InspectionCreationInput(
         hive_id=42,
@@ -192,15 +192,13 @@ def test_inspection_creation_input_missing_required_fields():
     """Test that missing required fields raise ValidationError."""
     with pytest.raises(ValidationError) as exc_info:
         InspectionCreationInput(
-            hive_id=-1,  # Invalid: must be positive
-            scheduled_for=date.today()
-            - timedelta(days=1),  # Invalid: cannot be in past
+            hive_id=-1,
+            scheduled_for=date.today() - timedelta(days=1),
             notes=None,
         )
 
     errors = exc_info.value.errors()
-    assert len(errors) >= 2  # At least hive_id and scheduled_for errors
-    # Check for presence of required field errors
+    assert len(errors) >= 2
     has_hive_id_error = any("hive_id" in error.get("loc", []) for error in errors)
     has_scheduled_for_error = any(
         "scheduled_for" in error.get("loc", []) for error in errors

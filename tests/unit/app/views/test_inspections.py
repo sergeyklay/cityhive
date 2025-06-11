@@ -144,7 +144,6 @@ async def test_create_inspection_with_hive_not_found_returns_not_found(
     request = make_mocked_request("POST", "/api/inspections", app=app_with_services)
     request.json = AsyncMock(return_value=data)
 
-    # Mock the service factory and service to raise HiveNotFoundError
     mock_inspection_service = AsyncMock()
     mock_inspection_service.create_inspection.side_effect = HiveNotFoundError(999)
 
@@ -192,7 +191,7 @@ async def test_create_inspection_with_invalid_json_returns_bad_request(
 async def test_create_inspection_with_missing_required_field_returns_bad_request(
     app_with_services,
 ):
-    data = {"scheduled_for": "2025-06-15"}  # Missing hive_id
+    data = {"scheduled_for": "2025-06-15"}
     request = make_mocked_request("POST", "/api/inspections", app=app_with_services)
     request.json = AsyncMock(return_value=data)
 
@@ -256,5 +255,3 @@ async def test_create_inspection_returns_expected_response_structure(
     response = await create_inspection(request)
 
     assert response.status == 201
-    # The response body would contain the inspection data
-    # In a real test, you might want to parse the JSON and verify structure

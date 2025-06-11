@@ -183,9 +183,6 @@ def test_sanitize_email_field_with_any_input_returns_string_type():
     assert isinstance(result, str)
 
 
-# Latitude validation tests
-
-
 @pytest.mark.parametrize(
     "latitude,expected_valid,expected_error",
     [

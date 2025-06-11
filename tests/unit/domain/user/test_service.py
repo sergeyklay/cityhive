@@ -39,7 +39,7 @@ def valid_registration_input():
 def sample_user():
     """Sample user model."""
     user = User(name="John Doe", email="john.doe@example.com")
-    user.id = 1  # Simulate saved user
+    user.id = 1
     return user
 
 
