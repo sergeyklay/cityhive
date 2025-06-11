@@ -281,3 +281,25 @@ async def test_create_inspection_returns_expected_response_structure(
     response = await create_inspection(request)
 
     assert response.status == 201
+
+
+async def test_create_inspection_with_programming_error_raises_exception(
+    app_with_services,
+):
+    """Test that programming errors are re-raised instead of being silently caught."""
+    data = {"hive_id": 42, "scheduled_for": "2025-06-15"}
+    request = make_mocked_request("POST", "/api/inspections", app=app_with_services)
+    request.json = AsyncMock(return_value=data)
+
+    mock_inspection_service = AsyncMock()
+    mock_inspection_service.create_inspection.side_effect = AttributeError(
+        "'NoneType' object has no attribute 'some_method'"
+    )
+
+    mock_service_factory = app_with_services[inspection_service_factory_key]
+    mock_service_factory.create_service.return_value = mock_inspection_service
+
+    with pytest.raises(AttributeError):
+        await create_inspection(request)
+
+    app_with_services[db_key]().session.rollback.assert_called_once()
