@@ -1,5 +1,6 @@
 """Unit tests for inspection API views."""
 
+import json
 from datetime import date, datetime, timezone
 from unittest.mock import AsyncMock, Mock
 
@@ -281,6 +282,23 @@ async def test_create_inspection_returns_expected_response_structure(
     response = await create_inspection(request)
 
     assert response.status == 201
+
+    assert response.text is not None
+    json_data = json.loads(response.text)
+
+    assert json_data["success"] is True
+
+    assert "id" in json_data
+    assert "hive_id" in json_data
+    assert "scheduled_for" in json_data
+    assert "notes" in json_data
+    assert "created_at" in json_data
+
+    assert json_data["id"] == mock_inspection.id
+    assert json_data["hive_id"] == mock_inspection.hive_id
+    assert json_data["scheduled_for"] == mock_inspection.scheduled_for.isoformat()
+    assert json_data["notes"] == mock_inspection.notes
+    assert json_data["created_at"] == mock_inspection.created_at.isoformat()
 
 
 async def test_create_inspection_with_programming_error_raises_exception(
