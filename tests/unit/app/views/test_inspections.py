@@ -155,7 +155,7 @@ async def test_create_inspection_with_hive_not_found_returns_not_found(
     response = await create_inspection(request)
 
     assert response.status == 404
-    app_with_services[db_key]().session.rollback.assert_called_once()
+    app_with_services[db_key]().session.rollback.assert_awaited_once()
 
 
 async def test_create_inspection_with_invalid_schedule_returns_bad_request(
@@ -176,7 +176,7 @@ async def test_create_inspection_with_invalid_schedule_returns_bad_request(
     response = await create_inspection(request)
 
     assert response.status == 400
-    app_with_services[db_key]().session.rollback.assert_called_once()
+    app_with_services[db_key]().session.rollback.assert_awaited_once()
 
 
 async def test_create_inspection_with_invalid_json_returns_bad_request(
@@ -221,7 +221,7 @@ async def test_create_inspection_with_integrity_error_returns_conflict(
     response = await create_inspection(request)
 
     assert response.status == 409
-    app_with_services[db_key]().session.rollback.assert_called_once()
+    app_with_services[db_key]().session.rollback.assert_awaited_once()
 
 
 async def test_create_inspection_with_integrity_error_during_commit_returns_conflict(
@@ -245,7 +245,7 @@ async def test_create_inspection_with_integrity_error_during_commit_returns_conf
     response = await create_inspection(request)
 
     assert response.status == 409
-    app_with_services[db_key]().session.rollback.assert_called_once()
+    app_with_services[db_key]().session.rollback.assert_awaited_once()
 
 
 async def test_create_inspection_returns_correct_content_type_header(
@@ -320,4 +320,4 @@ async def test_create_inspection_with_programming_error_raises_exception(
     with pytest.raises(AttributeError):
         await create_inspection(request)
 
-    app_with_services[db_key]().session.rollback.assert_called_once()
+    app_with_services[db_key]().session.rollback.assert_awaited_once()
