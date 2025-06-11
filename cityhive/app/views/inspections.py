@@ -137,12 +137,13 @@ async def create_inspection(request: web.Request) -> web.Response:
                 inspection_service_factory = request.app[inspection_service_factory_key]
                 inspection_service = inspection_service_factory.create_service(session)
                 inspection = await inspection_service.create_inspection(creation_input)
-                await session.commit()
                 return inspection
 
             result = await _handle_domain_errors(session, domain_operation)
             if isinstance(result, web.Response):
                 return result
+
+            await session.commit()
 
             logger.info(
                 "Inspection creation API success",
