@@ -143,12 +143,6 @@ class InspectionService:
         TODO: Implement actual notification scheduling logic.
         This is a stub for future notification system integration.
         """
-        logger.debug(
-            "TODO: Schedule inspection notification",
-            inspection_id=inspection.id,
-            hive_id=inspection.hive_id,
-            scheduled_for=inspection.scheduled_for.isoformat(),
-        )
         # Future implementation would:
         # 1. Calculate reminder date (e.g., 1 day before)
         # 2. Schedule background task with aiocron or similar
@@ -164,18 +158,10 @@ class InspectionService:
         Returns:
             Inspection model if found, None otherwise
         """
-        logger.debug("Looking up inspection by ID", inspection_id=inspection_id)
-
         inspection = await self._inspection_repository.get_by_id(inspection_id)
         if not inspection:
-            logger.debug("Inspection not found", inspection_id=inspection_id)
             return None
 
-        logger.debug(
-            "Inspection found",
-            inspection_id=inspection_id,
-            hive_id=inspection.hive_id,
-        )
         return inspection
 
     async def get_inspections_by_hive_id(self, hive_id: int) -> list[Inspection]:
@@ -188,14 +174,8 @@ class InspectionService:
         Returns:
             List of inspections for the hive
         """
-        logger.debug("Looking up inspections for hive", hive_id=hive_id)
-
         inspections = await self._inspection_repository.get_by_hive_id(hive_id)
-        logger.debug(
-            "Hive inspections found",
-            hive_id=hive_id,
-            inspection_count=len(inspections),
-        )
+
         return inspections
 
 

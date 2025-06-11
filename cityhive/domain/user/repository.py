@@ -23,17 +23,9 @@ class UserRepository:
 
     async def get_by_email(self, email: str) -> User | None:
         """Get user by email address."""
-        logger.debug("Querying user by email", email=email)
-
         result = await self._session.execute(select(User).where(User.email == email))
         user = result.scalar_one_or_none()
 
-        logger.debug(
-            "User query completed",
-            email=email,
-            found=user is not None,
-            user_id=user.id if user else None,
-        )
         return user
 
     async def exists_by_email(self, email: str) -> bool:
@@ -43,22 +35,11 @@ class UserRepository:
 
     async def save(self, user: User) -> User:
         """Save a user to the repository."""
-        logger.debug(
-            "Saving user",
-            user_id=getattr(user, "id", None),
-            email=user.email,
-            is_new=user.id is None,
-        )
 
         try:
             self._session.add(user)
             await self._session.flush()  # Get the ID without committing
 
-            logger.debug(
-                "User saved successfully",
-                user_id=user.id,
-                email=user.email,
-            )
             return user
 
         except IntegrityError as e:

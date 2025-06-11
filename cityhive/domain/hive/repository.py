@@ -22,24 +22,11 @@ class HiveRepository:
 
     async def save(self, hive: Hive) -> Hive:
         """Save a hive to the repository."""
-        logger.debug(
-            "Saving hive",
-            hive_id=getattr(hive, "id", None),
-            user_id=hive.user_id,
-            name=hive.name,
-            is_new=hive.id is None,
-        )
 
         try:
             self._session.add(hive)
             await self._session.flush()  # Get the ID without committing
 
-            logger.debug(
-                "Hive saved successfully",
-                hive_id=hive.id,
-                user_id=hive.user_id,
-                name=hive.name,
-            )
             return hive
 
         except IntegrityError as e:
@@ -54,44 +41,23 @@ class HiveRepository:
 
     async def get_user_by_id(self, user_id: int) -> User | None:
         """Get user by ID."""
-        logger.debug("Querying user by ID", user_id=user_id)
-
         result = await self._session.execute(select(User).where(User.id == user_id))
         user = result.scalar_one_or_none()
 
-        logger.debug(
-            "User query completed",
-            user_id=user_id,
-            found=user is not None,
-        )
         return user
 
     async def get_by_id(self, hive_id: int) -> Hive | None:
         """Get hive by ID."""
-        logger.debug("Querying hive by ID", hive_id=hive_id)
-
         result = await self._session.execute(select(Hive).where(Hive.id == hive_id))
         hive = result.scalar_one_or_none()
 
-        logger.debug(
-            "Hive query completed",
-            hive_id=hive_id,
-            found=hive is not None,
-        )
         return hive
 
     async def get_by_user_id(self, user_id: int) -> list[Hive]:
         """Get all hives for a specific user."""
-        logger.debug("Querying hives by user ID", user_id=user_id)
-
         result = await self._session.execute(
             select(Hive).where(Hive.user_id == user_id)
         )
         hives = result.scalars().all()
 
-        logger.debug(
-            "User hives query completed",
-            user_id=user_id,
-            hive_count=len(hives),
-        )
         return list(hives)
