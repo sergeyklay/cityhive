@@ -152,7 +152,26 @@ async def create_inspection(request: web.Request) -> web.Response:
             if isinstance(result, web.Response):
                 return result
 
-            await session.commit()
+            # Commit transaction with integrity error handling
+            try:
+                await session.commit()
+            except IntegrityError as e:
+                await session.rollback()
+                logger.warning(
+                    (
+                        "Inspection creation failed - "
+                        "database integrity error during commit"
+                    ),
+                    error_type=type(e).__name__,
+                    error=str(e),
+                )
+                return create_error_response(
+                    (
+                        "Database constraint violation - "
+                        "operation conflicts with existing data"
+                    ),
+                    409,
+                )
 
             logger.info(
                 "Inspection creation API success",
