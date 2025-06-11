@@ -15,7 +15,6 @@ from cityhive.infrastructure.db import pg_context
 from cityhive.infrastructure.logging import get_logger, setup_logging
 from cityhive.infrastructure.typedefs import (
     config_key,
-    db_key,
     health_service_factory_key,
     hive_service_factory_key,
     inspection_service_factory_key,
@@ -38,8 +37,7 @@ def init_user_service(app: web.Application) -> None:
     Creates and registers a UserServiceFactory that can create UserService instances
     with proper session management for each request.
     """
-    session_factory = app[db_key]
-    user_service_factory = UserServiceFactory(session_factory)
+    user_service_factory = UserServiceFactory()
     app[user_service_factory_key] = user_service_factory
 
 
@@ -50,8 +48,7 @@ def init_hive_service(app: web.Application) -> None:
     Creates and registers a HiveServiceFactory that can create HiveService instances
     with proper session management for each request.
     """
-    session_factory = app[db_key]
-    hive_service_factory = HiveServiceFactory(session_factory)
+    hive_service_factory = HiveServiceFactory()
     app[hive_service_factory_key] = hive_service_factory
 
 
@@ -62,8 +59,7 @@ def init_inspection_service(app: web.Application) -> None:
     Creates and registers an InspectionServiceFactory that can create InspectionService
     instances with proper session management for each request.
     """
-    session_factory = app[db_key]
-    inspection_service_factory = InspectionServiceFactory(session_factory)
+    inspection_service_factory = InspectionServiceFactory()
     app[inspection_service_factory_key] = inspection_service_factory
 
 

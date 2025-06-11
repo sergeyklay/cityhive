@@ -5,7 +5,7 @@ Business logic for user operations including registration and management.
 """
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from cityhive.domain.models import User
 from cityhive.domain.user.exceptions import DuplicateUserError
@@ -95,10 +95,6 @@ class UserService:
 
 class UserServiceFactory:
     """Factory for creating UserService instances with proper session management."""
-
-    def __init__(self, session_factory: async_sessionmaker[AsyncSession]) -> None:
-        """Initialize the factory with a session factory."""
-        self._session_factory = session_factory
 
     def create_service(self, session: AsyncSession) -> UserService:
         """

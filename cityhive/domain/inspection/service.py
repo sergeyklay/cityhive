@@ -8,7 +8,7 @@ from datetime import date
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from cityhive.domain.inspection.exceptions import (
     HiveNotFoundError,
@@ -181,10 +181,6 @@ class InspectionService:
 
 class InspectionServiceFactory:
     """Factory for creating InspectionService instances with session management."""
-
-    def __init__(self, session_factory: async_sessionmaker[AsyncSession]) -> None:
-        """Initialize the factory with a session factory."""
-        self._session_factory = session_factory
 
     def create_service(self, session: AsyncSession) -> InspectionService:
         """
