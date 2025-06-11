@@ -95,35 +95,37 @@ async def _handle_domain_errors(
         if callable(message):
             message = message(e)
 
-        if isinstance(e, HiveNotFoundError):
-            logger.warning(
-                "Inspection creation failed - hive not found", hive_id=e.hive_id
-            )
-        elif isinstance(e, InvalidScheduleError):
-            logger.warning(
-                "Inspection creation failed - invalid schedule", error=e.message
-            )
-        elif isinstance(e, DatabaseConflictError):
-            logger.warning(
-                "Inspection creation failed - database constraint violation",
-                error_type=type(e.original_error).__name__,
-                original_error=str(e.original_error),
-            )
-        elif isinstance(e, IntegrityError):
-            logger.warning(
-                "Inspection creation failed - database integrity error",
-                error_type=type(e).__name__,
-                error=str(e),
-            )
+        match e:
+            case HiveNotFoundError():
+                logger.warning(
+                    "Inspection creation failed - hive not found", hive_id=e.hive_id
+                )
+            case InvalidScheduleError():
+                logger.warning(
+                    "Inspection creation failed - invalid schedule", error=e.message
+                )
+            case DatabaseConflictError():
+                logger.warning(
+                    "Inspection creation failed - database constraint violation",
+                    error_type=type(e.original_error).__name__,
+                    original_error=str(e.original_error),
+                )
+            case IntegrityError():
+                logger.warning(
+                    "Inspection creation failed - database integrity error",
+                    error_type=type(e).__name__,
+                    error=str(e),
+                )
 
         return create_error_response(message, status)
     except Exception as e:
         await session.rollback()
         logger.exception(
-            "Unexpected error during inspection creation",
+            "Unexpected error during domain operation",
             error_type=type(e).__name__,
+            error_message=str(e),
         )
-        return create_error_response("Internal server error", 500)
+        raise
 
 
 async def create_inspection(request: web.Request) -> web.Response:
@@ -136,59 +138,59 @@ async def create_inspection(request: web.Request) -> web.Response:
     Returns:
         A web.Response object with the appropriate status code and error message
     """
-    try:
-        validation_result = await _parse_and_validate(request)
-        if isinstance(validation_result, web.Response):
-            return validation_result
+    validation_result = await _parse_and_validate(request)
+    if isinstance(validation_result, web.Response):
+        return validation_result
 
-        async with request.app[db_key]() as session:
-            inspection_service_factory = request.app[inspection_service_factory_key]
-            inspection_service = inspection_service_factory.create_service(session)
+    async with request.app[db_key]() as session:
+        inspection_service_factory = request.app[inspection_service_factory_key]
+        inspection_service = inspection_service_factory.create_service(session)
 
-            async def _create_inspection() -> Inspection:
-                return await inspection_service.create_inspection(validation_result)
+        async def _create_inspection() -> Inspection:
+            return await inspection_service.create_inspection(validation_result)
 
-            result = await _handle_domain_errors(session, _create_inspection)
-            if isinstance(result, web.Response):
-                return result
+        result = await _handle_domain_errors(session, _create_inspection)
+        if isinstance(result, web.Response):
+            return result
 
-            # Commit transaction with integrity error handling
-            try:
-                await session.commit()
-            except IntegrityError as e:
-                await session.rollback()
-                logger.warning(
-                    (
-                        "Inspection creation failed - "
-                        "database integrity error during commit"
-                    ),
-                    error_type=type(e).__name__,
-                    error=str(e),
-                )
-                return create_error_response(
-                    (
-                        "Database constraint violation - "
-                        "operation conflicts with existing data"
-                    ),
-                    409,
-                )
-
-            logger.info(
-                "Inspection creation API success",
-                inspection_id=result.id,
-                hive_id=result.hive_id,
-                scheduled_for=result.scheduled_for.isoformat(),
+        # Commit transaction with integrity error handling
+        try:
+            await session.commit()
+        except IntegrityError as e:
+            await session.rollback()
+            logger.warning(
+                "Inspection creation failed - database integrity error during commit",
+                error_type=type(e).__name__,
+                error=str(e),
             )
-            return create_success_response(
-                {
-                    "id": result.id,
-                    "hive_id": result.hive_id,
-                    "scheduled_for": result.scheduled_for.isoformat(),
-                    "notes": result.notes,
-                    "created_at": result.created_at.isoformat(),
-                },
-                status=201,
+            return create_error_response(
+                (
+                    "Database constraint violation - "
+                    "operation conflicts with existing data"
+                ),
+                409,
             )
-    except Exception:
-        logger.exception("Unexpected error in inspection creation API")
-        return create_error_response("Internal server error", 500)
+        except Exception as e:
+            logger.exception(
+                "Unexpected error during inspection creation",
+                error_type=type(e).__name__,
+                error_message=str(e),
+            )
+            raise
+
+        logger.info(
+            "Inspection creation API success",
+            inspection_id=result.id,
+            hive_id=result.hive_id,
+            scheduled_for=result.scheduled_for.isoformat(),
+        )
+        return create_success_response(
+            {
+                "id": result.id,
+                "hive_id": result.hive_id,
+                "scheduled_for": result.scheduled_for.isoformat(),
+                "notes": result.notes,
+                "created_at": result.created_at.isoformat(),
+            },
+            status=201,
+        )
