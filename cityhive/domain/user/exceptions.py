@@ -8,8 +8,6 @@ Business-layer exceptions for user operations.
 class UserError(Exception):
     """Base exception for user-related errors."""
 
-    pass
-
 
 class DuplicateUserError(UserError):
     """Raised when attempting to create a user that already exists."""
