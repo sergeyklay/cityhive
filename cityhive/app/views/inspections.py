@@ -17,6 +17,7 @@ from cityhive.app.helpers.request import (
     parse_json_request,
 )
 from cityhive.domain.inspection import (
+    DatabaseConflictError,
     HiveNotFoundError,
     InspectionCreationInput,
     InvalidScheduleError,
@@ -75,6 +76,10 @@ async def _handle_domain_errors(
     error_mapping = {
         HiveNotFoundError: (404, "Hive not found"),
         InvalidScheduleError: (400, lambda e: e.message),
+        DatabaseConflictError: (
+            409,
+            "Database constraint violation - operation conflicts with existing data",
+        ),
     }
 
     try:
@@ -93,6 +98,12 @@ async def _handle_domain_errors(
         elif isinstance(e, InvalidScheduleError):
             logger.warning(
                 "Inspection creation failed - invalid schedule", error=e.message
+            )
+        elif isinstance(e, DatabaseConflictError):
+            logger.warning(
+                "Inspection creation failed - database constraint violation",
+                error_type=type(e.original_error).__name__,
+                original_error=str(e.original_error),
             )
 
         return create_error_response(message, status)

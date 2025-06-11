@@ -23,3 +23,11 @@ class HiveNotFoundError(InspectionError):
     def __init__(self, hive_id: int) -> None:
         self.hive_id = hive_id
         super().__init__(f"Hive with ID {hive_id} not found")
+
+
+class DatabaseConflictError(InspectionError):
+    """Raised when database integrity constraints are violated."""
+
+    def __init__(self, message: str, original_error: Exception) -> None:
+        self.original_error = original_error
+        super().__init__(message)
