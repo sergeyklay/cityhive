@@ -73,7 +73,6 @@ async def _handle_domain_errors(
     Returns:
         The function result or a web.Response error
     """
-    # Error mapping for domain exceptions
     error_mapping = {
         HiveNotFoundError: (404, "Hive not found"),
         InvalidScheduleError: (400, lambda e: e.message),
@@ -141,16 +140,15 @@ async def create_inspection(request: web.Request) -> web.Response:
         validation_result = await _parse_and_validate(request)
         if isinstance(validation_result, web.Response):
             return validation_result
-        creation_input = validation_result
+
         async with request.app[db_key]() as session:
+            inspection_service_factory = request.app[inspection_service_factory_key]
+            inspection_service = inspection_service_factory.create_service(session)
 
-            async def domain_operation() -> Inspection:
-                inspection_service_factory = request.app[inspection_service_factory_key]
-                inspection_service = inspection_service_factory.create_service(session)
-                inspection = await inspection_service.create_inspection(creation_input)
-                return inspection
+            async def _create_inspection() -> Inspection:
+                return await inspection_service.create_inspection(validation_result)
 
-            result = await _handle_domain_errors(session, domain_operation)
+            result = await _handle_domain_errors(session, _create_inspection)
             if isinstance(result, web.Response):
                 return result
 
