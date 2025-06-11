@@ -11,6 +11,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from cityhive.domain.inspection.exceptions import (
+    DatabaseConflictError,
     HiveNotFoundError,
     InvalidScheduleError,
 )
@@ -71,6 +72,7 @@ class InspectionService:
         Raises:
             HiveNotFoundError: If the specified hive doesn't exist
             InvalidScheduleError: If the schedule date is invalid
+            DatabaseConflictError: If database integrity constraints are violated
         """
         logger.info(
             "Starting inspection creation",
@@ -113,14 +115,16 @@ class InspectionService:
             saved_inspection = await self._inspection_repository.save(inspection)
         except IntegrityError as e:
             logger.error(
-                "Database integrity error during inspection creation",
+                "Database integrity constraint violation during inspection creation",
                 hive_id=creation_input.hive_id,
                 scheduled_for=creation_input.scheduled_for.isoformat(),
+                error_type=type(e).__name__,
                 error=str(e),
             )
-            # Convert to domain exception
-            raise InvalidScheduleError(
-                "Inspection creation failed due to data conflict"
+            # Preserve original error context without masking the specific issue
+            raise DatabaseConflictError(
+                "Database integrity constraint violation during inspection creation",
+                original_error=e,
             ) from e
 
         # TODO: Schedule notification for upcoming inspection
